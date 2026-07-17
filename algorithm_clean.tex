@@ -1,0 +1,2711 @@
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+\usepackage[
+  top=2.45cm,
+  bottom=2.45cm,
+  left=2.35cm,
+  right=2.35cm,
+  headheight=15pt
+]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\usepackage{fvextra}
+\usepackage{framed}
+\usepackage{etoolbox}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{needspace}
+
+\definecolor{Primary}{HTML}{1F4E79}
+\definecolor{PrimaryLight}{HTML}{EAF2F8}
+\definecolor{RuleGray}{HTML}{B7C4CF}
+\definecolor{TextGray}{HTML}{334155}
+\definecolor{CodeBack}{HTML}{F7F9FB}
+\colorlet{shadecolor}{CodeBack}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=Primary,
+  urlcolor=Primary,
+  pdfauthor={},
+  pdftitle={算法整理稿}
+}
+
+\ctexset{
+  section={
+    format=\Large\bfseries\color{Primary},
+    numberformat=\color{Primary},
+    aftername=\quad,
+    beforeskip=1.4em plus .2em minus .1em,
+    afterskip=.75em
+  },
+  subsection={
+    format=\large\bfseries\color{TextGray},
+    numberformat=\color{Primary},
+    aftername=\quad,
+    beforeskip=1.05em plus .15em minus .1em,
+    afterskip=.45em
+  }
+}
+
+\titleformat{\section}
+  {\needspace{6\baselineskip}\Large\bfseries\color{Primary}}
+  {\llap{\colorbox{Primary}{\textcolor{white}{\makebox[2.3em][c]{\thesection}}}\hspace{0.75em}}}
+  {0pt}{}
+\titleformat{\subsection}
+  {\needspace{4\baselineskip}\large\bfseries\color{TextGray}}
+  {\textcolor{Primary}{\thesubsection}}
+  {0.7em}{}
+\titlespacing*{\section}{0pt}{1.45em plus .2em minus .1em}{0.75em}
+\titlespacing*{\subsection}{0pt}{1.0em plus .15em minus .1em}{0.45em}
+
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.32em plus 0.06em minus 0.03em}
+\linespread{1.08}
+\setlength{\emergencystretch}{4em}
+\setlist[itemize]{leftmargin=1.5em,itemsep=0.12em,topsep=0.18em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{TextGray}\nouppercase{\leftmark}}
+\fancyhead[R]{\small\color{TextGray}算法整理稿}
+\fancyfoot[C]{\small\color{TextGray}\thepage\ /\ \pageref*{LastPage}}
+\renewcommand{\headrulewidth}{0.35pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\pretitle{\begin{center}\vspace*{-1.2cm}\Huge\bfseries\color{Primary}}
+\posttitle{\par\vspace{0.3em}{\large\color{TextGray}算法竞赛知识点速查}\par\vspace{0.65em}\end{center}}
+\preauthor{}
+\postauthor{}
+\predate{}
+\postdate{}
+
+\DefineVerbatimEnvironment{CodeBlock}{Verbatim}{
+  breaklines=true,
+  breakanywhere=true,
+  fontsize=\small,
+  baselinestretch=1.02,
+  formatcom=\color{black},
+  xleftmargin=0.2em,
+  xrightmargin=0.2em
+}
+\BeforeBeginEnvironment{CodeBlock}{\vspace{0.25em}\begin{snugshade}}
+\AfterEndEnvironment{CodeBlock}{\end{snugshade}\vspace{0.25em}}
+\newcommand{\topic}[1]{%
+  \par\needspace{3\baselineskip}\vspace{0.45em}%
+  \noindent{\bfseries\color{Primary}#1}\par\vspace{0.12em}%
+}
+\title{算法整理稿}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\vspace{-2.1em}
+\tableofcontents
+\clearpage
+
+\section{二叉堆与树状数组}
+
+\subsection{树状数组}
+
+\topic{基本性质}
+
+常用于维护可差分信息
+
+O(logn)时间内实现单点修改、区间查询
+
+数组tree[i]表示其向前lowbit长度的区间和
+
+\begin{CodeBlock}
+lowbit(i)表示i在二进制下最低位1代表的数
+\end{CodeBlock}
+
+所需函数:
+
+lowbit:求出对应lowbit值
+
+\begin{CodeBlock}
+int lowbit(int x) {
+    return x & (-x);
+}
+\end{CodeBlock}
+
+建树:利用前缀和预处理
+
+\begin{CodeBlock}
+for (int i = 1; i <= n; i++) {
+    int x;
+    cin >> x;
+    pre[i] = pre[i - 1] + x;
+    tree[i] = pre[i] - pre[i - lowbit(i)];
+}
+\end{CodeBlock}
+
+\begin{quote}
+\noindent\texttt{add(int x,int y):将x位置的值加y}
+\end{quote}
+
+\begin{CodeBlock}
+void add(int x, int y) {
+    for (int i = x; i <= n; i += lowbit(i))
+        tree[i] += y;
+}
+\end{CodeBlock}
+
+\begin{quote}
+\noindent\texttt{sum(int x):求x位置前缀和,可利用这个求区间和}
+\end{quote}
+
+\begin{CodeBlock}
+int sum(int x) {
+    int ans = 0;
+    for (int i = x; i >= 1; i -= lowbit(i))
+        ans += tree[i];
+    return ans;
+}
+\end{CodeBlock}
+
+如需借助树状数组实现区间修改、单点查询,则用树状数组维护原数组的差分数组即可,即建树时无需进行前缀和预处理,直接利用原数组建树,其余操作遵循差分基本性质
+
+\subsection{二维树状数组}
+
+\topic{单点修改与范围查询}
+
+方法与一维基本相同,所有一重循环变为二重循环,插入初始数组时不需要前缀和,直接调用add(x,y,z)增加
+
+\begin{CodeBlock}
+private int sum(int x, int y) {
+    int ans = 0;
+    for (int i = x; i > 0; i -= lowbit(i))
+        for (int j = y; j > 0; j -= lowbit(j))
+            ans += tree[i][j];
+    return ans;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+private void add(int x, int y, int v) {
+    for (int i = x; i <= n; i += lowbit(i))
+        for (int j = y; j <= m; j += lowbit(j))
+            tree[i][j] += v;
+}
+\end{CodeBlock}
+
+\topic{范围修改与范围查询}
+
+核心公式:
+
+\begin{CodeBlock}
+sum为原数组(1,1)->(n,m)的区间和
+\end{CodeBlock}
+
+D为原数组的差分数组
+
+意义:仅有x>=i,y>=j的时候,(x,y)这个格子才计入
+
+后续推导:
+
+所以需要四个树状数组来维护:
+
+\begin{CodeBlock}
+public static int[][] info1 = new int[MAXN][MAXM]; // d[i][j]
+public static int[][] info2 = new int[MAXN][MAXM]; // d[i][j] * i
+public static int[][] info3 = new int[MAXN][MAXM]; // d[i][j] * j
+public static int[][] info4 = new int[MAXN][MAXM]; // d[i][j] * i * j
+\end{CodeBlock}
+
+add:
+
+\begin{CodeBlock}
+public static void add(int x, int y, int v) {
+    int v1 = v;
+    int v2 = x * v;
+    int v3 = y * v;
+    int v4 = x * y * v;
+    for (int i = x; i <= n; i += lowbit(i)) {
+        for (int j = y; j <= m; j += lowbit(j)) {
+            info1[i][j] += v1;
+            info2[i][j] += v2;
+            info3[i][j] += v3;
+            info4[i][j] += v4;
+        }
+    }
+}
+\end{CodeBlock}
+
+sum:
+
+\begin{CodeBlock}
+public static int sum(int x, int y) {
+    int ans = 0;
+    for (int i = x; i > 0; i -= lowbit(i)) {
+        for (int j = y; j > 0; j -= lowbit(j)) {
+            ans += (x + 1) * (y + 1) * info1[i][j]
+                 - (y + 1) * info2[i][j]
+                 - (x + 1) * info3[i][j]
+                 + info4[i][j];
+        }
+    }
+    return ans;
+}
+\end{CodeBlock}
+
+初始化:
+
+\begin{CodeBlock}
+public static void add(int a, int b, int c, int d, int v) {
+    add(a, b, v);
+    add(a, d + 1, -v);
+    add(c + 1, b, -v);
+    add(c + 1, d + 1, v);
+}
+\end{CodeBlock}
+
+求区间和:
+
+\begin{CodeBlock}
+public static int range(int a, int b, int c, int d) {
+    return sum(c, d) - sum(a - 1, d) - sum(c, b - 1) + sum(a - 1, b - 1);
+}
+\end{CodeBlock}
+
+\section{字符串}
+
+\subsection{字符串哈希}
+
+\topic{哈希值计算}
+
+对于一个字符串 string s,其哈希值为hash
+
+哈希方式:
+
+\begin{CodeBlock}
+unsigned long long hash = 0;
+for (int i = 0;i < s.length();i++) {
+    hash = hash*base + (int)s[i];
+}
+\end{CodeBlock}
+
+通过定义哈希值类型为unsigned long long,实现64位溢出,相当于对2的64次方取模
+
+base一般为13131或大于300的质数,499等
+
+\subsection{快速子串哈希}
+
+\topic{前缀哈希}
+
+核心思想:前缀处理
+
+hash[i]表示字符串s前i位子串哈希值
+
+需要预处理base的次方值数组pow[],同样开ull类型以自动溢出
+
+子串[l,r]哈希值为:hash[l,r] = hash[r]-hash[l-1]*base的r-l+1次方,l=0时特殊处理
+
+\subsection{字典树}
+
+\topic{数组含义}
+
+需要依靠三个数组维护字典树:
+
+\begin{CodeBlock}
+tree[i][j]:i为节点编号,j表示第j条路径
+\end{CodeBlock}
+
+pass[i]:经过节点i的次数,可用于求前缀出现次数
+
+end[i]:到达节点i结束的次数,可用于求该字符串是否出现
+
+\topic{基本操作}
+
+\begin{quote}
+\noindent\texttt{getnum(char s):将字符转化为代表路径的数字,a->1/A->1/0->1}
+\end{quote}
+
+\begin{CodeBlock}
+int getnum(char s) {
+    if (s >= '0' && s <= '9')
+        return s - '0' + 1;
+    if (s >= 'a' && s <= 'z')
+        return s - 'a' + 11;
+    if (s >= 'A' && s <= 'Z')
+        return s - 'A' + 37;
+    return 0;
+}
+\end{CodeBlock}
+
+\begin{quote}
+\noindent\texttt{insert(string s):将字符串插入字典树}
+\end{quote}
+
+\begin{CodeBlock}
+void insert(string s) {
+    int cur = 1;
+    pass[cur]++;
+    for (int i = 0; i < s.length(); i++) {
+        int path = getnum(s[i]);
+        if (tree[cur][path] == 0)
+            tree[cur][path] = ++cnt;
+        cur = tree[cur][path];
+        pass[cur]++;
+    }
+    ed[cur]++;
+}
+\end{CodeBlock}
+
+\begin{quote}
+\noindent\texttt{prefix(string s):求以s为前缀的字符串数量}
+\end{quote}
+
+\begin{CodeBlock}
+int prefix(string s) {
+    int cur = 1;
+    for (int i = 0; i < s.length(); i++) {
+        int path = getnum(s[i]);
+        if (tree[cur][path] == 0)
+            return 0;
+        cur = tree[cur][path];
+    }
+    return pass[cur];
+}
+\end{CodeBlock}
+
+\begin{quote}
+\noindent\texttt{search(string s):查看整体字符串s出现次数}
+\end{quote}
+
+\begin{CodeBlock}
+int search(string s) {
+    int cur = 1;
+    for (int i = 0; i < s.length(); i++) {
+        int path = getnum(s[i]);
+        if (tree[cur][path] == 0)
+            return 0;
+        cur = tree[cur][path];
+    }
+    return ed[cur];
+}
+\end{CodeBlock}
+
+\begin{quote}
+\noindent\texttt{del(string s):删除字符串s}
+\end{quote}
+
+\begin{CodeBlock}
+void del(string s) {
+    if (search(s)) {
+        int cur = 1;
+        pass[cur]--;
+        for (int i = 0; i < s.length(); i++) {
+            int path = getnum(s[i]);
+            if (--pass[tree[cur][path]] == 0) {
+                tree[cur][path] = 0;
+                return;
+            }
+            cur = tree[cur][path];
+        }
+        ed[cur]--;
+    }
+}
+\end{CodeBlock}
+
+\topic{典型应用}
+
+将数字转化为至多32位二进制数存储在字典树中,用于快速处理异或和问题
+
+洛谷P4551:最大异或路径
+
+\subsection{KMP算法}
+
+\topic{用途与 next 数组}
+
+用途:快速求解s2在s1中作为子串的第一个出现位置
+
+next数组:next[i]=k表示S2的i位置之前的字符串(不包含s2[i]也不包含整体),其前缀与后缀能匹配的最大长度为k,同时也表示该最长前缀的下一个字符的所在位置为k,因为这个前缀是0到k-1
+
+\begin{quote}
+KMP 字符串匹配过程示意图：主串指针不回退，模式串按 next 数组回跳。\par
+\end{quote}
+
+\topic{构造与匹配}
+
+图解:上图为不用跳的情况,下图为需要跳的情况
+
+\begin{quote}
+KMP next 数组构造示意图：相等则扩展最长相等前后缀，失配则沿 next 继续回跳。\par
+\end{quote}
+
+\begin{quote}
+手绘示意图：KMP/next 的跳转过程，展示失配后如何回跳到前缀位置。\par
+\end{quote}
+
+\begin{CodeBlock}
+void build() {
+    nxt[0] = -1;
+    nxt[1] = 0;
+    int i = 2, cn = 0;
+    while (i <= m) {
+        if (s2[i - 1] == s2[cn]) {
+            nxt[i++] = ++cn;
+        } else if (cn > 0) {
+            cn = nxt[cn];
+        } else {
+            nxt[i++] = 0;
+        }
+    }
+}
+\end{CodeBlock}
+
+kmp过程:
+
+\begin{CodeBlock}
+int kmp() {
+    int x = 0, y = 0;
+    while (x < n && y < m) {
+        if (s1[x] == s2[y]) {
+            x++;
+            y++;
+        } else if (y > 0) {
+            y = nxt[y];
+        } else {
+            x++;
+        }
+    }
+    return y == m ? x - y : -1;
+}
+\end{CodeBlock}
+
+\topic{循环节结论}
+
+对于一个总长为n,有k个循环节(可以有剩余),每个循环节长度为L的字符串,其最大公共前后缀(next[n])一定为(k-1)L+剩余长度,循环节长度L=kL+剩余长度-(k-1)L-剩余长度=n-next[n],可以利用这个性质求得最小循环节长度
+
+洛谷P4391
+
+\section{线段树}
+
+\subsection{线段树基础}
+
+\topic{基本性质与存储}
+
+作用:高效区间修改、区间查询
+
+性质:对于一个长度为n的序列:
+
+1.对线段树上任一结点,要么没孩子,要么双孩子
+
+2.线段树只有2n-1个结点,高为logn
+
+3.结点编号最大不超过4n-1
+
+所需数据:
+
+\begin{CodeBlock}
+tree[4*N]:用数组存储线段树
+\end{CodeBlock}
+
+tag[4*N]:懒标记数组
+
+\topic{区间和模板}
+
+build:数据输入完成后构建初始线段树
+
+\begin{CodeBlock}
+void build(int l, int r, int i) {
+    if (l == r) {
+        tree[i] = a[l];
+        return;
+    }
+    int mid = (l + r) >> 1;
+    build(l, mid, i << 1);
+    build(mid + 1, r, i << 1 | 1);
+    tree[i] = tree[i << 1] + tree[i << 1 | 1];
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+for (int i = 1; i <= n; i++)
+    cin >> a[i];
+build(1, n, 1);
+\end{CodeBlock}
+
+\begin{CodeBlock}
+lazy、down:对懒标记操作,组合使用
+\end{CodeBlock}
+
+\begin{CodeBlock}
+void lazy(int i, int v, int len) {
+    tree[i] += v * len;
+    tag[i] += v;
+}
+void down(int i, int ln, int rn) {
+    if (tag[i] != 0) {
+        lazy(i << 1, tag[i], ln);
+        lazy(i << 1 | 1, tag[i], rn);
+        tag[i] = 0;
+    }
+}
+\end{CodeBlock}
+
+query:查询区间和
+
+\begin{CodeBlock}
+int query(int job1, int job2, int l, int r, int i) {
+    if (job1 <= l && job2 >= r)
+        return tree[i];
+    int mid = (l + r) >> 1;
+    down(i, mid - l + 1, r - mid);
+    int ans = 0;
+    if (job1 <= mid)
+        ans += query(job1, job2, l, mid, i << 1);
+    if (job2 >= mid + 1)
+        ans += query(job1, job2, mid + 1, r, i << 1 | 1);
+    return ans;
+}
+\end{CodeBlock}
+
+add:区间修改
+
+\begin{CodeBlock}
+void add(int jobl, int jobr, int jobv, int l, int r, int i) {
+    if (jobl <= l && jobr >= r) {
+        lazy(i, jobv, r - l + 1);
+        return;
+    }
+    int mid = (l + r) >> 1;
+    down(i, mid - l + 1, r - mid);
+    if (jobl <= mid)
+        add(jobl, jobr, jobv, l, mid, i << 1);
+    if (jobr >= mid + 1)
+        add(jobl, jobr, jobv, mid + 1, r, i << 1 | 1);
+    tree[i] = tree[i << 1] + tree[i << 1 | 1];
+}
+\end{CodeBlock}
+
+线段树可以对区间执行不同的操作,通过设计不同的懒标记与下传机制实现,例如:
+
+\topic{懒标记类型}
+
+对区间进行加减:tag表示增减的数值
+
+对区间进行重置:tag表示重置为的值
+
+对01进行反转:tag=0,1,表示是否需要反转
+
+对区间进行等差数列的加减:tag1首项,tag2公差
+
+线段树可以维护不同类型的信息,通过给线段树内存储的信息设计合适的类型、意义即可:
+
+\topic{维护信息设计}
+
+维护区间最大值:存储范围内的最大值
+
+维护最大子段和:洛谷P4513 小白逛公园
+
+存储四个信息:区间左侧开头的最大子段和,区间右侧开头的最大子段和,区间最大子段和(答案),区间和
+
+合并区间时,区间和直接合并,两侧开头最大子段和分别与另一区间全部和合并,区间最大子段和由之前两侧答案、左侧区间右侧+右侧区间左侧合并取最大得到
+
+\begin{CodeBlock}
+void change(int loc, int v, int l, int r, int i) {
+    if (l == r && loc == l) {
+        sum[i] = v;
+        ans[i] = v;
+        lmax[i] = v;
+        rmax[i] = v;
+        return;
+    }
+    int mid = (l + r) >> 1;
+    if (loc <= mid)
+        change(loc, v, l, mid, i << 1);
+    else
+        change(loc, v, mid + 1, r, i << 1 | 1);
+    sum[i] = sum[i << 1] + sum[i << 1 | 1];
+    lmax[i] = max(lmax[i << 1], sum[i << 1] + lmax[i << 1 | 1]);
+    rmax[i] = max(rmax[i << 1 | 1], sum[i << 1 | 1] + rmax[i << 1]);
+    ans[i] = max(max(ans[i << 1], ans[i << 1 | 1]), rmax[i << 1] + lmax[i << 1 | 1]);
+}
+\end{CodeBlock}
+
+单点修改时,无需维护懒标记
+
+维护多种操作时需要考虑优先级,即某一操作是否会影响另一操作,不会被影响的优先,如:
+
+\topic{多标记优先级}
+
+1.修改:范围重置+范围增加 查询:区间和
+
+进行范围重置时需要将懒标记中的范围增加取消,懒标记下传时,要先重置再增加
+
+2.修改:范围增加+范围同乘 查询:区间和
+
+获得乘法懒标记时需要同步扩大加法懒标记,下传时先下传乘法再下传加法,否则会导致多加一次
+
+势能分析:非经典线段树进行剪枝
+
+\topic{势能分析剪枝}
+
+洛谷P4145 线段树维护区间和,修改操作为开根号
+
+经典线段树无法在O(1)时间内加工出一段区间内开根号后的区间和,但是经过势能分析,每个叶结点最多被开根号6次就会变为1,而对1开根号是没有意义的
+
+基于这些性质,可以在线段树上再维护一个区间最大值的信息,当区间最大值为1时,整棵子树就不需要再进行开方操作(剪枝),其查询总复杂度依旧为O(mlogn)
+
+此种线段树可以用于:
+
+修改:区间开根号 维持:区间和+区间最大值
+
+当区间最大值为1时,修改操作剪枝
+
+修改:区间取模+单点修改 维持:区间和
+
+当区间最大值超过要求取模数时,修改操作剪枝
+
+\begin{CodeBlock}
+void work(int jobl, int jobr, int jobv, int l, int r, int i) {
+    if (maxx[i] < jobv)
+        return; // 剪枝
+    if (jobl <= l && jobr >= r && l == r) {
+        tree[i] %= jobv;
+        maxx[i] = tree[i];
+        return;
+    }
+    int mid = (l + r) >> 1;
+    if (jobl <= mid)
+        work(jobl, jobr, jobv, l, mid, i << 1);
+    if (jobr >= mid + 1)
+        work(jobl, jobr, jobv, mid + 1, r, i << 1 | 1);
+    tree[i] = tree[i << 1] + tree[i << 1 | 1];
+    maxx[i] = max(maxx[i << 1], maxx[i << 1 | 1]);
+}
+\end{CodeBlock}
+
+\subsection{可持久化线段树}
+
+\topic{单点修改主席树}
+
+单点修改的主席树:
+
+\begin{quote}
+可持久化线段树和标记永久化\par
+可持久化线段树，又叫主席树\par
+做一次修改操作，就生成一棵新版本线段树，去处理比较复杂的区间查询问题\par
+如果生成n个版本的线段树，有m个查询操作，那么单次生成、单次查询的时间复杂度为 $O(\log n)$\par
+单点修改的可持久化线段树\par
+1，单点修改操作，不需要懒更新机制\par
+2，新版本的线段树生成时，沿途节点新建，其他节点复用，新建空间为 $O(\log n)$\par
+3，查询单点 $x$ 的信息时，根据版本号从根节点一路走到对应叶子即可\par
+4，查询区间 $[l,r]$ 的信息时，可以利用 $r$ 版本与 $(l-1)$ 版本做差\par
+5，总空间通常写作 $O(4n+n\log n)$\par
+\end{quote}
+
+建立好初始版本线段树以后,每次都建立新节点,将对应老节点所有信息(左右子节点、值)全部复制过来,然后看往那边走,不被走的那一边就是被复用的节点
+
+单点修改与单点查询的线段树模板:
+
+\begin{quote}
+模板题一\par
+单点修改型可持久化线段树模板\par
+给定一个长度为 $n$ 的数组 $arr$，下标范围为 $1 \sim n$，原始数组视为 0 号版本\par
+一共有 $m$ 条操作，每条操作属于以下两类之一\par
+$v\ 1\ x\ y$：基于第 $v$ 号版本，把位置 $x$ 的值修改为 $y$，并生成新版本\par
+$v\ 2\ x$：基于第 $v$ 号版本，查询位置 $x$ 的值，新版本与第 $v$ 号版本一致\par
+每条操作后得到的新版本数组，版本编号为操作的计数\par
+$1 \le n,m \le 10^6$\par
+测试链接：https://www.luogu.com.cn/problem/P3919\par
+\end{quote}
+
+\begin{CodeBlock}
+const int maxn = 5e7 + 9;
+int n, m;
+int tree[maxn], root[maxn], lft[maxn], rgt[maxn], value[maxn];
+int a[maxn];
+int cnt = 0;
+int build(int l, int r) {
+    int rt = ++cnt;
+    if (l == r) {
+        value[rt] = a[l];
+    } else {
+        int mid = (l + r) >> 1;
+        lft[rt] = build(l, mid);
+        rgt[rt] = build(mid + 1, r);
+    }
+    return rt;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int update(int jobi, int jobv, int l, int r, int i) {
+    int rt = ++cnt;
+    lft[rt] = lft[i];
+    rgt[rt] = rgt[i];
+    value[rt] = value[i];
+    if (l == r) {
+        value[rt] = jobv;
+    } else {
+        int mid = (l + r) >> 1;
+        if (jobi <= mid)
+            lft[rt] = update(jobi, jobv, l, mid, lft[rt]);
+        else
+            rgt[rt] = update(jobi, jobv, mid + 1, r, rgt[rt]);
+    }
+    return rt;
+}
+int query(int jobi, int l, int r, int i) {
+    if (l == r)
+        return value[i];
+    int mid = (l + r) >> 1;
+    if (jobi <= mid)
+        return query(jobi, l, mid, lft[i]);
+    return query(jobi, mid + 1, r, rgt[i]);
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+cin >> n >> m;
+for (int i = 1; i <= n; i++)
+    cin >> a[i];
+root[0] = build(1, n);
+for (int i = 1; i <= m; i++) {
+    int v, op, p;
+    cin >> v >> op >> p;
+    if (op == 1) {
+        int x;
+        cin >> x;
+        root[i] = update(p, x, 1, n, root[v]);
+    } else {
+        root[i] = root[v];
+        cout << query(p, 1, n, root[v]) << endl;
+    }
+}
+\end{CodeBlock}
+
+\topic{第 k 小主席树}
+
+\begin{quote}
+模板题二\par
+主席树求区间第 $k$ 小模板\par
+给定一个长度为 $n$ 的数组 $arr$，下标范围为 $1 \sim n$，一共有 $m$ 次查询\par
+每次查询给出 $l,r,k$，要求输出 $arr[l..r]$ 中第 $k$ 小的数字\par
+$1 \le n,m \le 2 \times 10^5$\par
+$1 \le arr[i] \le 10^9$\par
+测试链接：https://www.luogu.com.cn/problem/P3834\par
+\end{quote}
+
+该种线段树为值域线段树:来到某个节点时,维护所有值的出现次数,所以值域太大的时候,大概率是要进行离散化的
+
+建树时,每读入一个数就建立一个版本的线段树
+
+查询时,对范围边界的两个版本的线段树做差,可以得到边界范围内数字的出现次数,从而得到往哪边走
+
+\begin{CodeBlock}
+const int maxn = 1e7 + 9;
+int n, m;
+int tree[maxn], lft[maxn], rgh[maxn], root[maxn], siz[maxn];
+int a[maxn], ori[maxn]; // ori 复制原数组,a 负责输入、排序、去重
+int cnt = 0;
+map<int, int> Map; // 离散化后快速查询数字对应下标
+int build(int l, int r) {
+    int rt = ++cnt;
+    siz[rt] = 0;
+    if (l < r) {
+        int mid = (l + r) >> 1;
+        lft[rt] = build(l, mid);
+        rgh[rt] = build(mid + 1, r);
+    }
+    return rt;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int insert(int jobi, int l, int r, int i) {
+    int rt = ++cnt;
+    lft[rt] = lft[i];
+    rgh[rt] = rgh[i];
+    siz[rt] = siz[i] + 1;
+    if (l < r) {
+        int mid = (l + r) >> 1;
+        if (jobi <= mid)
+            lft[rt] = insert(jobi, l, mid, lft[rt]);
+        else
+            rgh[rt] = insert(jobi, mid + 1, r, rgh[rt]);
+    }
+    return rt;
+}
+int query(int jobk, int l, int r, int u, int v) {
+    if (l == r)
+        return l;
+    int lsize = siz[lft[v]] - siz[lft[u]];
+    int mid = (l + r) >> 1;
+    if (lsize >= jobk)
+        return query(jobk, l, mid, lft[u], lft[v]);
+    return query(jobk - lsize, mid + 1, r, rgh[u], rgh[v]);
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+cin >> n >> m;
+for (int i = 1; i <= n; i++) {
+    cin >> a[i];
+    ori[i] = a[i];
+}
+sort(a + 1, a + n + 1);
+int nn = unique(a + 1, a + n + 1) - a - 1;
+for (int i = 1; i <= nn; i++)
+    Map[a[i]] = i;
+root[0] = build(1, nn);
+for (int i = 1; i <= n; i++) {
+    int x = Map[ori[i]];
+    root[i] = insert(x, 1, nn, root[i - 1]);
+}
+for (int i = 1; i <= m; i++) {
+    int l, r, k;
+    cin >> l >> r >> k;
+    cout << a[query(k, 1, nn, root[l - 1], root[r])] << endl;
+}
+\end{CodeBlock}
+
+\topic{范围修改主席树}
+
+\begin{quote}
+范围修改的可持久化线段树\par
+经典的方式\par
+1，范围修改操作，需要懒更新机制\par
+2，仿照单点修改的可持久化线段树\par
+3，每来到一个节点，新建节点并且复制老节点的信息\par
+4，当前节点的懒更新下发时（down过程），左右孩子也新建，接收懒更新信息，务必让老节点信息保持不变\par
+生成新版本的线段树，单次额外空间为 $O(\log n)$\par
+只要有懒更新的下发，必然新建节点，所以生成新版本的线段树、执行查询操作，都会增加空间占用\par
+\end{quote}
+
+\begin{CodeBlock}
+const int maxn = 3e7;
+int n, m;
+int a[maxn], tree[maxn], tag[maxn], lft[maxn], rgh[maxn], root[maxn];
+int cnt = 0;
+int clone(int i) {
+    int rt = ++cnt;
+    lft[rt] = lft[i];
+    rgh[rt] = rgh[i];
+    tree[rt] = tree[i];
+    tag[rt] = tag[i];
+    return rt;
+}
+void lazy(int i, int v, int len) {
+    tree[i] += v * len;
+    tag[i] += v;
+}
+void down(int i, int ln, int rn) {
+    if (tag[i] != 0) {
+        lft[i] = clone(lft[i]);
+        rgh[i] = clone(rgh[i]);
+        lazy(lft[i], tag[i], ln);
+        lazy(rgh[i], tag[i], rn);
+        tag[i] = 0;
+    }
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int build(int l, int r) {
+    int rt = ++cnt;
+    tag[rt] = 0;
+    if (l == r) {
+        tree[rt] = a[l];
+    } else {
+        int mid = (l + r) >> 1;
+        lft[rt] = build(l, mid);
+        rgh[rt] = build(mid + 1, r);
+        tree[rt] = tree[lft[rt]] + tree[rgh[rt]];
+    }
+    return rt;
+}
+int add(int jobl, int jobr, int jobv, int l, int r, int i) {
+    int rt = clone(i);
+    if (jobl <= l && jobr >= r) {
+        lazy(rt, jobv, r - l + 1);
+    } else {
+        int mid = (l + r) >> 1;
+        down(rt, mid - l + 1, r - mid);
+        if (jobl <= mid)
+            lft[rt] = add(jobl, jobr, jobv, l, mid, lft[rt]);
+        if (jobr >= mid + 1)
+            rgh[rt] = add(jobl, jobr, jobv, mid + 1, r, rgh[rt]);
+        tree[rt] = tree[lft[rt]] + tree[rgh[rt]];
+    }
+    return rt;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int query(int jobl, int jobr, int l, int r, int i) {
+    if (jobl <= l && jobr >= r)
+        return tree[i];
+    int mid = (l + r) >> 1;
+    down(i, mid - l + 1, r - mid);
+    int ans = 0;
+    if (jobl <= mid)
+        ans += query(jobl, jobr, l, mid, lft[i]);
+    if (jobr >= mid + 1)
+        ans += query(jobl, jobr, mid + 1, r, rgh[i]);
+    return ans;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+cin >> n >> m;
+for (int i = 1; i <= n; i++)
+    cin >> a[i];
+root[0] = build(1, n);
+int t = 0;
+for (int i = 1; i <= m; i++) {
+    char op;
+    cin >> op;
+    if (op == 'C') {
+        int l, r, d;
+        cin >> l >> r >> d;
+        root[t + 1] = add(l, r, d, 1, n, root[t]);
+        t++;
+    } else if (op == 'Q') {
+        int l, r;
+        cin >> l >> r;
+        cout << query(l, r, 1, n, root[t]) << endl;
+    } else if (op == 'H') {
+        int l, r, k;
+        cin >> l >> r >> k;
+        cout << query(l, r, 1, n, root[k]) << endl;
+    } else if (op == 'B') {
+        int k;
+        cin >> k;
+        t = k;
+    }
+}
+\end{CodeBlock}
+
+\topic{标记永久化}
+
+\begin{quote}
+标记永久化\par
+懒更新不再下发，变成只属于某个范围的标记信息，上下级的标记之间，不再相互影响\par
+查询时，懒更新也不再下发，从上往下的过程中，维护标记的叠加信息，即可完成查询\par
+标记挂在父范围不下发，也能在后续访问时正确合并\par
+标记永久化，并不是标记信息的值不再变化，而是上下级标记之间不再相互影响\par
+可持久化线段树，可以使用标记永久化可以减少空间占用，但是应用范围比较窄\par
+范围增加+查询累加和，这一类的线段树，修改和查询的性质都有可叠加性，可以标记永久化\par
+这一类的可持久化线段树，出题时会刻意缩减可用空间，目的就是考察标记永久化\par
+范围重置、查询最大值/最小值，这一类的线段树，修改和查询的性质不具有可叠加性，就用经典的方式\par
+一旦标记永久化，就没有了懒更新的下发，那么查询时就不再新建节点了\par
+如果生成 $n$ 个版本的线段树，并配合 $m$ 次查询操作，总空间通常写作 $O(4n+n\log n)$\par
+\end{quote}
+
+经典求区间和、操作区间累加的标记永久化:
+
+\begin{CodeBlock}
+public static void add(int jobl, int jobr, long jobv, int l, int r, int i) {
+    int a = Math.max(jobl, l);
+    int b = Math.min(jobr, r);
+    sum[i] += jobv * (b - a + 1);
+    if (jobl <= l && r <= jobr) {
+        addTag[i] += jobv;
+    } else {
+        int mid = (l + r) / 2;
+        if (jobl <= mid)
+            add(jobl, jobr, jobv, l, mid, i << 1);
+        if (jobr > mid)
+            add(jobl, jobr, jobv, mid + 1, r, i << 1 | 1);
+    }
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+public static long query(int jobl, int jobr, long addHistory, int l, int r, int i) {
+    if (jobl <= l && r <= jobr)
+        return sum[i] + addHistory * (r - l + 1);
+    int mid = (l + r) >> 1;
+    long ans = 0;
+    if (jobl <= mid)
+        ans += query(jobl, jobr, addHistory + addTag[i], l, mid, i << 1);
+    if (jobr > mid)
+        ans += query(jobl, jobr, addHistory + addTag[i], mid + 1, r, i << 1 | 1);
+    return ans;
+}
+\end{CodeBlock}
+
+\section{倍增与ST表}
+
+\topic{核心思想与适用范围}
+
+核心思想:预处理2的幂次方的区间长度的信息,通过拼凑区间来得到其他区间长度的信息
+
+常见应用:线段跳跃、区间最值RMQ、区间最大公因数、区间最小公倍数、区间按位或、区间按位与
+
+核心数据:st[i][p]:从i出发长度为1<<p的区间存储的信息
+
+核心状态转移方程:st[i][p] = st[st[i][p-1]][p-1]
+
+st表共有power = log2(n)列
+
+ST表适用范围:两个区间A,B中重叠的部分不影响区间A+B的答案,能通过A区间答案和B区间答案简单加工得出(可重复贡献问题),如最大最小值、区间公约数、按位与按位或,适用于RMQ问题
+
+\subsection{ST 表构建}
+
+1.预处理长度为1<<0的区间信息
+
+常规:
+
+\begin{CodeBlock}
+for (int i = 1; i <= n; i++)
+    st[i][0] = a[i];
+\end{CodeBlock}
+
+(洛谷P4155 国旗计划)
+
+\begin{CodeBlock}
+//双指针构建初始st表
+for (int i = 1, arrive = 1; i <= n; i++) {
+    while (arrive + 1 <= n && a[arrive + 1].s <= a[i].e)
+        arrive++;
+    st[i][0] = arrive;
+}
+\end{CodeBlock}
+
+2.通过方程 填充st表剩余部分
+
+\begin{CodeBlock}
+//套公式构建整体st表
+for (int p = 1; p <= power; p++) {
+    for (int i = 1; i <= n; i++)
+        st[i][p] = st[st[i][p - 1]][p - 1];
+}
+\end{CodeBlock}
+
+\subsection{线段跳跃}
+
+将区间[l,r]长度二进制拆分,从l开始向后跳,每次跳拆出来的一个二的幂次方长度,就可以拼凑出整个区间
+
+最少线段覆盖环问题:国旗计划
+
+从p = power开始判断下一步到达的点是否在目标范围内,不在则p--,在则累加答案并更新现在所在位置
+
+\begin{CodeBlock}
+int sum = 0;
+int aim = a[i].s + m;
+int cur = i;
+for (int p = power; p >= 0; p--) {
+    int nxt = st[cur][p];
+    if (nxt != 0 && a[nxt].e < aim) {
+        sum += 1 << p;
+        cur = nxt;
+    }
+}
+\end{CodeBlock}
+
+\subsection{RMQ 查询}
+
+可以优化,区间合并的过程允许重叠,只需要找到两个长度为1<<k的区间并集为[l,r]即可,令k为满足1<<k <= L的最大整数,返回max(f[l][k],f[r-(1<<k)+1][k])即可
+
+\begin{CodeBlock}
+for (int i = 1; i <= n; i++) {
+    cin >> a[i];
+    st1[i][0] = a[i];
+    st2[i][0] = a[i];
+}
+for (int p = 1; p <= log2(n); p++) {
+    for (int i = 1; i + (1 << p) - 1 <= n; i++) {
+        st1[i][p] = max(st1[i][p - 1], st1[i + (1 << (p - 1))][p - 1]);
+        st2[i][p] = min(st2[i][p - 1], st2[i + (1 << (p - 1))][p - 1]);
+    }
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+for (int i = 1; i <= q; i++) {
+    int x, y;
+    cin >> x >> y;
+    int k;
+    if (x == y)
+        k = 0;
+    else
+        k = log2(y - x + 1);
+    int maxx = max(st1[x][k], st1[y - (1 << k) + 1][k]);
+    int minn = min(st2[x][k], st2[y - (1 << k) + 1][k]);
+    cout << maxx - minn << endl;
+}
+\end{CodeBlock}
+
+\section{背包问题优化}
+
+\subsection{多重背包二进制优化}
+
+对于一种物品:单个重量w,体积v,可选取数量c
+
+普通解法为循环枚举该物品数量
+
+二进制优化:只需要枚举log(c)次
+
+将这种物品从c个拆成:
+
+重量w,体积v,重量2w,体积2v,重量4w,体积4v......重量不足二次幂的剩余部分也成为一个物品
+
+\begin{CodeBlock}
+for (int i = 1; i <= n; i++) {
+    int x, y, c;
+    cin >> x >> y >> c;
+    for (int k = 1; k <= c; k <<= 1) {
+        cnt++;
+        v[cnt] = x * k;
+        w[cnt] = y * k;
+        c -= k;
+    }
+    if (c > 0) {
+        cnt++;
+        v[cnt] = x * c;
+        w[cnt] = y * c;
+    }
+}
+\end{CodeBlock}
+
+后续视为01背包即可
+
+\subsection{单调队列优化}
+
+\topic{余数分组}
+
+按照对重量取余的余数分组,例如:
+
+\begin{CodeBlock}
+i号物品w=5,v=3,c=4;
+\end{CodeBlock}
+
+如果要求dp[i][20],则:
+
+\begin{CodeBlock}
+dp[i][20] = max(
+    dp[i - 1][8]  + 4 * w,
+    dp[i - 1][11] + 3 * w,
+    dp[i - 1][14] + 2 * w,
+    dp[i - 1][17] + 1 * w,
+    dp[i - 1][20] + 0 * w
+);
+\end{CodeBlock}
+
+\topic{状态转移变形}
+
+\begin{CodeBlock}
+dp[i][j] = max(dp[i - 1][j - k * v] + k * w)
+令 j1 = j - k * v
+则有:
+dp[i][j] = max(dp[i - 1][j1] + (j - j1) / v * w)
+\end{CodeBlock}
+
+原理:dp[i][j] = max(dp[i-1][j-kv] + kw),令j1 = j - kv
+
+\begin{CodeBlock}
+dp[i][j] = max(dp[i - 1][j1] + (j - j1) / v * w)
+dp[i][j] = j / v * w + max(dp[i - 1][j1] - j1 / v * w)
+其中 max 内的部分可以放入单调队列维护
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int dp[105][100005];
+deque<int> q;
+int value1(int i, int j) {
+    return dp[i - 1][j] - j / v[i] * w[i];
+}
+int main() {
+    cin >> n >> m;
+    for (int i = 1; i <= n; i++)
+        cin >> v[i] >> w[i] >> c[i];
+    for (int i = 1; i <= n; i++) {
+        for (int modd = 0; modd <= min(m, v[i] - 1); modd++) {
+            q.clear(); // 不要忘记清空队列
+            for (int j = modd; j <= m; j += v[i]) {
+                while (!q.empty() && value1(i, q.back()) < value1(i, j))
+                    q.pop_back();
+                q.push_back(j);
+                while (!q.empty() && q.front() <= j - (c[i] + 1) * v[i])
+                    q.pop_front();
+                dp[i][j] = value1(i, q.front()) + j / v[i] * w[i];
+            }
+        }
+    }
+    cout << dp[n][m];
+    return 0;
+}
+\end{CodeBlock}
+
+\section{树上dp问题}
+
+\topic{树形 DP 套路}
+
+\begin{quote}
+树形 DP 研究的是树结构上的状态转移问题。\par
+树的根节点没有父节点，其余每个节点都恰好有一个父节点；从根到任意节点的简单路径唯一，这也是树形 DP 能够成立的重要基础。\par
+与一般图上的动态规划相比，树上的依赖关系通常更加清晰，大多数题目都体现为“父节点的答案依赖于各个子节点返回的信息”。\par
+依赖关系清晰并不意味着题目简单，关键仍在于状态设计是否完整、合并方式是否正确。\par
+\smallskip
+常见分析步骤如下：\par
+1）先明确父节点要求出答案时，需要从每棵子树获得哪些信息；\par
+2）把这些信息组织成递归函数的返回值或状态结构；\par
+3）递归求出每棵子树的完整信息；\par
+4）在父节点处合并所有子树信息，得到当前节点的状态并继续向上返回。\par
+\end{quote}
+
+树上 DP 往往不会出现大量重复子问题，节点间依赖方向也十分明确，因此很多题目直接使用树形递归即可，不一定需要额外写记忆化数组。
+
+洛谷P1352 没有上司的舞会 上司参加附属员工不参加
+
+\topic{没有上司的舞会}
+
+这道题目的上司与员工的关系就是一个树形关系,每一次dfs都要传回两个信息:自己参加时,以自己为根的最大快乐度;自己不参加时,以自己为根的最大快乐度。自己参加时的最大快乐度为所有子树的根不参加时最大快乐度的和,自己不参加时的最大快乐度为所有子树的根可参加也可不参加取最大的和。
+
+\begin{CodeBlock}
+struct Info {
+    int yes, no;
+    Info(int x, int y) {
+        yes = x;
+        no = y;
+    }
+};
+Info dfs(int now) {
+    int yes = happy[now], no = 0;
+    for (int i = 0; i < a[now].size(); i++) {
+        Info nxt = dfs(a[now][i]);
+        yes += nxt.no;
+        no += max(nxt.yes, nxt.no);
+    }
+    return Info(yes, no);
+}
+\end{CodeBlock}
+
+\subsection{dfn序}
+
+\topic{dfn 序性质}
+
+\begin{quote}
+dfn 序是指按照深度优先遍历顺序给树上节点依次编号后得到的序列。\par
+若某个节点的 dfn 编号为 $x$，其子树大小为 $y$，则编号区间 $[x, x+y-1]$ 恰好对应这棵子树中的全部节点。\par
+因此，只要同时记录 dfn 编号与子树大小，就可以把“树上的一个子树”转化为“序列上的一个连续区间”，从而方便进行子树定位、祖先关系判断以及跨子树讨论。\par
+\end{quote}
+
+在 DFS 中记录每个节点的 dfn 编号与 `siz` 即可：
+
+\begin{CodeBlock}
+void dfs(int now) {
+    dfn[now] = ++cnt;
+    siz[dfn[now]] = 1;
+    for (int i = 0; i < a[now].size(); i++) {
+        int v = a[now][i];
+        dfs(v);
+        siz[dfn[now]] += siz[dfn[v]];
+    }
+}
+\end{CodeBlock}
+
+\topic{树上背包}
+
+洛谷P2014 选课
+
+课程关系为树状,选先修课后才能选后续的课程,需要一个虚拟头结点0将森林连起来
+
+一种直接的状态设计是：`dfs(i,j,k)` 表示以 $i$ 为根的树中，只考虑前 $j$ 棵子树，恰好选择 $k$ 门课程时能够获得的最大学分。
+
+状态转移分为两类：
+
+1. 不选择第 $j$ 个子树，`dp[i][j][k] = dp[i][j-1][k]`
+
+2. 选择第 $j$ 个子树：枚举在该子树中选择 $s$ 门课程
+
+\begin{CodeBlock}
+dp[i][j][k] = max(dp[i][j-1][k-s],dp[v][size[v]][s])
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int dfs(int i, int j, int k) {
+    if (k == 0)
+        return 0;
+    if (j == 0)
+        return s[i];
+    if (dp[i][j][k] != -1)
+        return dp[i][j][k];
+    int ans = dfs(i, j - 1, k);
+    int v = a[i][j - 1];
+    for (int s = 1; s < k; s++)
+        ans = max(ans, dfs(i, j - 1, k - s) + dfs(v, a[v].size(), s));
+    return dp[i][j][k] = ans;
+}
+\end{CodeBlock}
+
+从上述转移可以看出：如果某个节点不被选择，那么它整棵子树都会被整体跳过。利用 dfn 序的连续区间性质，可以把这一过程优化成按 dfn 编号从大到小转移，时间复杂度降为 $O(nm)$。
+
+\begin{CodeBlock}
+void dfs(int now) {
+    dfn[now] = ++cnt;
+    siz[cnt] = 1;
+    val[cnt] = s[now];
+    for (int i = 0; i < a[now].size(); i++) {
+        int v = a[now][i];
+        dfs(v);
+        siz[dfn[now]] += siz[dfn[v]];
+    }
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+for (int i = n + 1; i >= 1; i--) {
+    for (int j = 1; j <= m + 1; j++) {
+        dp[i][j] = max(dp[i + siz[i]][j], dp[i + 1][j - 1] + val[i]);
+    }
+}
+\end{CodeBlock}
+
+洛谷P1273 有线电视网
+
+\topic{有线电视网}
+
+树状结构,叶子结点有正收益,边权为负收益,问你访问最多多少个叶子结点可以保持不亏本
+
+这道题同样属于“不选当前节点就整棵子树一起跳过”的类型，因此也可以借助 dfn 序把时间复杂度压缩到 $O(nm)$。
+
+需要注意：无法到达的无解状态应初始化为负无穷。
+
+\begin{CodeBlock}
+int dfs(int now, int k) {
+    if (k == 0)
+        return 0;
+    if (now > n)
+        return -999999999;
+    if (dp[now][k] != -1)
+        return dp[now][k];
+    int ans = dfs(now + siz[now], k);
+    ans = max(ans, dfs(now + 1, k - leaf[now]) + val[now]);
+    return dp[now][k] = ans;
+}
+\end{CodeBlock}
+
+\section{LCA-最近公共祖先}
+
+\subsection{倍增 LCA}
+
+树上倍增算法:在线逐个求解LCA
+
+节点数为n,询问数为m
+
+预处理时间复杂度O(nlogn)
+
+单次查询时间复杂度O(logn)
+
+m次查询时间复杂度O(mlogn)
+
+步骤:(求a,b的最近公共祖先)
+
+1.利用倍增,让a,b先来到同一层
+
+2.利用倍增,让a,b同时往上跳,保证各自到达的节点不同,只跳二的幂次方步
+
+3.最后再往上跳一步即可
+
+\topic{预处理与查询}
+
+预处理的同时初始化每个节点跳2\textasciicircum{}0步能到达的节点st[u][0] = f,并且依此得出跳不同幂次方步能到达的节点(因为是从根节点开始的dfs,所以一定能建完整)
+
+\begin{CodeBlock}
+void dfs(int u, int f) {
+    if (u == s)
+        deep[u] = 1;
+    else
+        deep[u] = deep[f] + 1;
+    st[u][0] = f;
+    for (int p = 1; (1 << p) <= deep[u]; p++)
+        st[u][p] = st[st[u][p - 1]][p - 1];
+    for (int i = 0; i < a[u].size(); i++) {
+        if (a[u][i] == f)
+            continue;
+        dfs(a[u][i], u);
+    }
+}
+\end{CodeBlock}
+
+LCA 查询过程如下：
+
+\begin{CodeBlock}
+int lca(int x, int y) {
+    if (deep[x] < deep[y])
+        swap(x, y);
+    for (int p = log2(n); p >= 0; p--) {
+        if (deep[st[x][p]] >= deep[y])
+            x = st[x][p];
+    }
+    if (x == y)
+        return x;
+    for (int p = log2(n); p >= 0; p--) {
+        if (st[x][p] != st[y][p]) {
+            x = st[x][p];
+            y = st[y][p];
+        }
+    }
+    return st[x][0];
+}
+\end{CodeBlock}
+
+建树时如果题目没有保证输入边已经按父子方向给出，就应补成双向边，并在遍历时避免沿父边回跳。
+
+\begin{CodeBlock}
+cin >> n >> m >> s;
+for (int i = 1; i <= n - 1; i++) {
+    int x, y;
+    cin >> x >> y;
+    a[x].push_back(y);
+    a[y].push_back(x);
+}
+dfs(s, 0);
+\end{CodeBlock}
+
+\subsection{Tarjan 离线 LCA}
+
+时间复杂度O(n+m)
+
+步骤:
+
+1.建立每个节点的问题列表:要建双向边,并且要记录每个边对应的原来问题的编号,用来后续输出
+
+2.来到当前节点cur,令vis[cur] = true
+
+3.遍历cur所有子树,每颗子树遍历完后都和cur节点合并成一个集合,令cur为集合头结点
+
+4.遍历完cur所有子树后,处理cur的问题LCA(cur,x):
+
+如果vis[x] = true,LCA = x所在集合头结点
+
+如果vis[x] = false,忽略这个问题
+
+建立节点对应的问题列表:
+
+\begin{CodeBlock}
+struct node {
+    int v, index;
+};
+\end{CodeBlock}
+
+\begin{CodeBlock}
+for (int i = 1; i <= m; i++) {
+    int x, y;
+    cin >> x >> y;
+    q[x].push_back({y, i});
+    q[y].push_back({x, i});
+}
+\end{CodeBlock}
+
+tarjan过程:tarjan(s,0)
+
+\begin{CodeBlock}
+void tarjan(int u, int f) {
+    vis[u] = 1; // 当前节点标记为访问过
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i];
+        if (v == f)
+            continue;
+        tarjan(v, u);
+        fa[v] = u;
+    }
+    for (int i = 0; i < q[u].size(); i++) {
+        int v = q[u][i].v;
+        if (!vis[v])
+            continue;
+        ans[q[u][i].index] = find(v);
+    }
+}
+\end{CodeBlock}
+
+\topic{常用结论}
+
+一棵树上的三个节点,他们的两两最近公共祖先数量<=2
+
+对于一颗每条边权值为1的树,从头结点到指定节点的距离就是深度deep,两节点之间的最短路径长就是deep[u]+deep[v]-2*deep[LCA]
+
+\section{博弈论}
+
+\subsection{巴什博弈}
+
+一共有n个石头,两个人,每个人每次可以拿1到m个石头,谁拿走最后一个石头谁赢
+
+一种直接做法是记忆化搜索：设 $dp[i]$ 表示当前剩余 $i$ 个石头时先手是否必胜。边界为 $dp[0]=0$，表示无石可取时当前行动者失败。转移时枚举拿走 $1 \sim m$ 个石头，只要存在一种选择能让对手进入必败态，则当前状态就是必胜态。
+
+\begin{CodeBlock}
+int dfs(int n, int m) {
+    if (n == 0)
+        return 0;
+    if (dp[n] != -1)
+        return dp[n];
+    for (int i = 1; i <= m; i++) {
+        if (dfs(n - i, m) == 0)
+            return dp[n] = 1;
+    }
+    return dp[n] = 0;
+}
+\end{CodeBlock}
+
+结论：当 $n \bmod (m+1) \neq 0$ 时先手必胜；当 $n \bmod (m+1)=0$ 时先手必败。原因在于先手可以通过第一次操作，把局面调整到 $m+1$ 的倍数；之后无论后手拿走多少个，先手都补足到 $m+1$，从而始终把“整轮拿满 $m+1$ 个”的节奏控制在自己手里，最终让对手面对必败局面。
+
+\topic{反巴什博弈}
+
+取到最后一个石子的人输,相当于取到倒数第二个石子的人赢:(n-1) \%(m+1) == 0则先手输,不为零则先手赢
+
+\topic{拓展巴什博弈}
+
+每次可以取质数的自然数幂次方的石头,如2\textasciicircum{}0=1,2\textasciicircum{}2=4,3\textasciicircum{}1=3个石头
+
+结论：可取数量集合中虽然形式复杂，但由于 $1,2,3,4,5$ 都可以被取到，而 $6$ 不能被直接取到，因此局面会呈现出以 $6$ 为周期的规律。若先手能够始终把石头数控制为 $6$ 的倍数留给对手，那么对手无论如何操作，都无法继续维持这一性质，先手便可重复该策略直至获胜。
+
+\subsection{尼姆博弈}
+
+地上有 $n$ 堆石子,每一堆都有 $a_i$ 个石子,两个人每个人都可以任选一堆石子选择 $1-a_i$ 个石子拿走,拿走最后一个石头的人获胜
+
+核心结论：把所有石子堆大小做异或运算。异或和不为 $0$ 时先手必胜，异或和为 $0$ 时后手必胜。
+
+\topic{尼姆博弈证明}
+
+核心思想是：先手面对异或和不为 $0$ 的局面时，总能交还给后手一个异或和为 $0$ 的局面；而后手面对异或和为 $0$ 的局面时，无论怎样操作，都只能把局面重新变成异或和不为 $0$。如此反复，最终后手会先面对全零局面。
+
+1.后手交还先手:异或为零不管怎么取,形成的局面异或一定不为零
+
+任意某堆石头取走任意个石子,必然会导致原石子数二进制表示下某一位1的消失,从而改变所有堆石头该二进制位下1的奇偶性,导致异或值上这里由0变成1
+
+2.先手交还后手:一定能通过某种操作将异或不为零的局面变成异或为零的局面
+
+选择总异或最高位的1,石头堆中石子二进制表示下该位有1的都可以选,假设选的a,那么a就要变成a xor 总,设为b,b一定小于a,因为是选的最高位的1,所以更高位异或0是不变的,而b这一位由1变成了0,后面不用管,b一定<a
+
+\topic{反尼姆博弈}
+
+在尼姆博弈的基础上,规则改为了谁拿走最后一个石头,谁输
+
+分情况讨论如下：
+
+1.如果石头堆石子数量全为1:根据奇偶性,奇数后手赢,偶数先手赢
+
+2.如果只有一堆>1,其余均为1:先手必胜,因为先手可以调整自己是否取完那一堆>1的石头,从而调整石头堆石子数量为1的个数的奇偶性
+
+3.在2的情况下,异或结果一定不为0,因为最高位异或起来肯定为1;由尼姆博弈,如果我面对异或结果不为0的局面,我一定可以交还一个异或结果为0的局面,对手只能交还给我一个异或结果为0的局面,这就会进入循环;也就是说,如果一开始的局面异或不为0,我先手就一定能最先碰到情况2,从而进入必胜状态
+
+综上可得结论：
+
+如果所有石头堆大小都为 $1$：偶数堆时先手赢，奇数堆时后手赢
+
+如果整体异或和不为 $0$：先手赢
+
+如果整体异或和为 $0$：后手赢
+
+\section{树的性质}
+
+\subsection{树的重心}
+
+\topic{基本定义}
+
+\begin{quote}
+树的重心有以下三种等价定义，求出的点是相同的。\par
+1，以某个节点为根时，最大子树的节点数最小，那么这个节点是重心；\par
+2，以某个节点为根时，每棵子树的节点数都不超过总结点数的一半，那么这个节点是重心；\par
+3，以某个节点为根时，所有节点走向该节点的总边数最少，那么这个节点是重心。\par
+\end{quote}
+
+\topic{补充性质}
+
+\begin{quote}
+1，一棵树最多有两个重心；\par
+2，如果一棵树有两个重心，那么这两个重心一定相邻；\par
+3，如果在树上增加或删除一个叶节点，新的重心最多只会沿树边移动一条边；\par
+4，如果把两棵树连接起来，那么新树的重心一定落在原来两棵树重心之间的路径上；\par
+5，如果树上边权都为正，那么无论边权如何分布，所有节点走向重心的总距离和最小。\par
+\end{quote}
+
+\topic{基于定义一的求法}
+
+下面使用第一条定义求树的重心。设 `siz[u]` 表示以 $u$ 为根的子树大小，`maxsub` 表示删去当前节点后剩余各个连通块中最大的节点数。若某个节点的 `maxsub` 更小，就可以用它更新当前重心。
+
+\begin{CodeBlock}
+void dfs(int u, int f) {
+    siz[u] = 1;
+
+    int maxsub = 0;
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i];
+        if (v == f)
+            continue;
+        dfs(v, u);
+        siz[u] += siz[v];
+        maxsub = max(maxsub, siz[v]);
+    }
+
+    maxsub = max(maxsub, n - siz[u]);
+    if (best > maxsub) {
+        best = maxsub;
+        center = u;
+        c1 = -1;
+        ok = 0;
+    } else if (best == maxsub && u < center) {
+        c1 = center;
+        center = u;
+        ok = 1;
+    }
+}
+\end{CodeBlock}
+
+其中 `center` 表示当前记录到的重心，`c1` 表示可能存在的另一个重心。若只需要求任意一个重心，保留 `center` 即可；若题目要求同时处理两个重心，则需要额外记录第二个答案。
+
+\topic{基于定义二的求法}
+
+也可以利用第二条定义做更直接的判定。先对每个节点求出以它为根时最大的连通块大小，记作 `ms[u]`；随后检查是否满足 $ms[u] \le n/2$，满足条件的节点就是重心。
+
+\begin{CodeBlock}
+void dfs(int u, int f) {
+    siz[u] = 1;
+    int maxsub = 0;
+
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i];
+        if (v == f)
+            continue;
+        dfs(v, u);
+        siz[u] += siz[v];
+        maxsub = max(maxsub, siz[v]);
+    }
+
+    maxsub = max(maxsub, n - siz[u]);
+    ms[u] = maxsub;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+for (int i = 1; i <= n; i++) {
+    if (ms[i] <= n / 2)
+        cout << i << " ";
+}
+\end{CodeBlock}
+
+\subsection{树的直径}
+
+\topic{基本概念}
+
+树上距离最远的两个点所形成的路径，称为树的直径。直径既可以表示为这条路径的长度，也可以进一步记录路径两端点和路径上的所有节点。
+
+\begin{quote}
+树的直径常用两类求法：\par
+1，两次 DFS 或 BFS：适用于边权非负的树。优点是既能得到直径长度，也能通过 `last` 数组还原直径路径；缺点是需要遍历两遍树。\par
+2，树形 DP：适用于所有树。优点是只需要遍历一遍树；缺点是通常只能直接得到直径长度。\par
+\end{quote}
+
+\topic{正边权树的结论}
+
+如果树上的边权都为正，则有如下直径相关结论：
+
+\begin{quote}
+1，如果一棵树存在多条直径，那么这些直径一定拥有公共的中间部分，可能是一个公共点，也可能是一段公共路径；\par
+2，树上任意一点的最远点集合中，至少存在一个点是某条直径的端点。\par
+\end{quote}
+
+\topic{两次 DFS 求直径}
+
+第一次从任意点出发，找到距离它最远的点 `start`；第二次从 `start` 出发，找到距离 `start` 最远的点 `end`，此时 `dis[end]` 就是直径长度。`last` 数组用于记录搜索树中的父节点，从而可以还原直径路径。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cstring>
+using namespace std;
+
+struct node {
+    int v, w;
+};
+
+int n;
+vector<node> a[500005];
+int dis[500005], last[500005];
+
+void dfs(int u, int f) {
+    last[u] = f;
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i].v;
+        int w = a[u][i].w;
+        if (v == f)
+            continue;
+        dis[v] = dis[u] + w;
+        dfs(v, u);
+    }
+}
+
+int main() {
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        a[u].push_back({v, w});
+        a[v].push_back({u, w});
+    }
+
+    int start = 1;
+    dfs(start, 0);
+    for (int i = 1; i <= n; i++) {
+        if (dis[i] > dis[start])
+            start = i;
+    }
+
+    int end = 1;
+    memset(dis, 0, sizeof(dis));
+    dfs(start, 0);
+    for (int i = 1; i <= n; i++) {
+        if (dis[i] > dis[end])
+            end = i;
+    }
+
+    cout << dis[end];
+    return 0;
+}
+\end{CodeBlock}
+
+\topic{树形 DP 求直径长度}
+
+设 `dis[u]` 表示从 $u$ 出发，只向其子树方向走能够得到的最大路径长度；设 `ans[u]` 表示必须经过 $u$ 的最大路径长度。更新时先递归处理子节点，再用两条向下路径拼出经过当前节点的候选直径。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cstring>
+using namespace std;
+
+struct node {
+    int v, w;
+};
+
+int n;
+vector<node> a[500005];
+int dis[500005], ans[500005];
+
+void dfs(int u, int f) {
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i].v;
+        int w = a[u][i].w;
+        if (v == f)
+            continue;
+        dfs(v, u);
+    }
+
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i].v;
+        int w = a[u][i].w;
+        if (v == f)
+            continue;
+        ans[u] = max(ans[u], dis[u] + dis[v] + w);
+        dis[u] = max(dis[u], dis[v] + w);
+    }
+}
+
+int main() {
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        a[u].push_back({v, w});
+        a[v].push_back({u, w});
+    }
+
+    dfs(1, 0);
+
+    int maxi = 1;
+    for (int i = 1; i <= n; i++) {
+        if (ans[i] > ans[maxi])
+            maxi = i;
+    }
+    cout << ans[maxi] << endl;
+    return 0;
+}
+\end{CodeBlock}
+
+\subsection{树上差分}
+
+\topic{树上点差分}
+
+树上点差分用于处理“多次对一条路径上的所有点权同时加上某个值，最后统一统计所有修改后的点权”的问题。关键是先用倍增 LCA 或 Tarjan 离线算法快速求出路径两端点的最近公共祖先，再把路径修改转化成若干个端点标记。
+
+假设要让 $x$ 到 $y$ 的路径上所有点权都增加 $v$，令 $lca$ 为 $x,y$ 的最近公共祖先，则点差分标记为：
+
+\begin{CodeBlock}
+num[x] += v;
+num[y] += v;
+num[lca] -= v;
+num[parent[lca]] -= v;
+\end{CodeBlock}
+
+所有修改都标记完成后，从根节点做一次 DFS 汇总子树贡献。遍历到节点 $u$ 时，先递归处理 $u$ 的所有子节点，再把每个子节点的 `num` 累加回 `num[u]`。最终 `num[u]` 就表示所有路径修改生效后节点 $u$ 的点权。
+
+\topic{树上边差分}
+
+树上边差分用于处理“多次对一条路径上的所有边权同时加上某个值，最后统一统计所有修改后的边权”的问题。仍然先求路径两端点的最近公共祖先。
+
+假设要让 $x$ 到 $y$ 的路径上所有边权都增加 $v$，令 $lca$ 为 $x,y$ 的最近公共祖先，则边差分标记为：
+
+\begin{CodeBlock}
+num[x] += v;
+num[y] += v;
+num[lca] -= 2 * v;
+\end{CodeBlock}
+
+最后同样从根节点 DFS 汇总。若边 $e$ 从父节点 $u$ 连向子节点 $v$，则汇总完成前后可以把 `num[v]` 作为这条边所承受的累积修改量，即 `weight[e] += num[v]`，随后再把 `num[v]` 累加到 `num[u]`。
+
+\topic{点差分模板}
+
+下面的模板使用倍增 LCA 处理路径端点，并统计所有路径经过每个点的次数最大值。若每条路径贡献不是 $1$，只需要把四处差分标记中的 `++` 和 `--` 改成对应的 `+= v` 与 `-= v`。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+int n, k;
+vector<int> a[50004];
+int num[50004];
+int deep[50004], st[50004][63];
+int maxx = -1;
+
+void dfs_lca(int u, int f) {
+    if (u == 1)
+        deep[u] = 1;
+    else
+        deep[u] = deep[f] + 1;
+    st[u][0] = f;
+    for (int p = 1; (1 << p) <= deep[u]; p++)
+        st[u][p] = st[st[u][p - 1]][p - 1];
+    for (int i = 0; i < a[u].size(); i++) {
+        if (a[u][i] == f)
+            continue;
+        dfs_lca(a[u][i], u);
+    }
+}
+
+int lca(int x, int y) {
+    if (deep[x] < deep[y])
+        swap(x, y);
+    for (int p = log2(n); p >= 0; p--) {
+        if (deep[st[x][p]] >= deep[y])
+            x = st[x][p];
+    }
+    if (x == y)
+        return x;
+    for (int p = log2(n); p >= 0; p--) {
+        if (st[x][p] != st[y][p]) {
+            x = st[x][p];
+            y = st[y][p];
+        }
+    }
+    return st[x][0];
+}
+
+void dfs(int u, int f) {
+    for (int i = 0; i < a[u].size(); i++) {
+        if (a[u][i] == f)
+            continue;
+        dfs(a[u][i], u);
+    }
+
+    for (int i = 0; i < a[u].size(); i++) {
+        if (a[u][i] == f)
+            continue;
+        num[u] += num[a[u][i]];
+    }
+    maxx = max(maxx, num[u]);
+}
+
+int main() {
+    cin >> n >> k;
+    for (int i = 1; i < n; i++) {
+        int x, y;
+        cin >> x >> y;
+        a[x].push_back(y);
+        a[y].push_back(x);
+    }
+
+    dfs_lca(1, 0);
+
+    for (int i = 1; i <= k; i++) {
+        int x, y;
+        cin >> x >> y;
+        int fa = lca(x, y);
+        num[x]++;
+        num[y]++;
+        num[fa]--;
+        num[st[fa][0]]--;
+    }
+
+    dfs(1, 0);
+    cout << maxx << endl;
+    return 0;
+}
+\end{CodeBlock}
+
+\topic{边差分模板}
+
+边差分与点差分的主体流程基本相同，仍然是先用 LCA 做路径端点标记，再从根节点向上汇总。区别只在最后的 DFS：遍历父节点 $u$ 的每条子边时，设这条边连向子节点 $v$，则 `num[v]` 就是这条边需要累加的差分结果。因此只需要在点差分模板的 `dfs` 中，把“只累加子树贡献”改成“先更新边权，再累加子树贡献”。
+
+\begin{CodeBlock}
+void dfs(int u, int f) {
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i].v;
+        int w = a[u][i].w;
+        if (v == f)
+            continue;
+        dfs(v, u);
+    }
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i].v;
+        int w = a[u][i].w;
+        if (v == f)
+            continue;
+        a[u][i].w += num[v];
+        num[u] += num[v];
+    }
+}
+\end{CodeBlock}
+
+\section{数学}
+
+\subsection{质因数分解 O(根号N)}
+
+\topic{试除法模板}
+
+\begin{CodeBlock}
+void work(int x) {
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            cout << i << endl;
+            while (x % i == 0)
+                x /= i;
+        }
+    }
+    if (x > 1)
+        cout << x << endl;
+}
+\end{CodeBlock}
+
+\subsection{素数筛 埃氏筛}
+
+\topic{埃氏筛}
+
+\begin{CodeBlock}
+for (int i = 2; i < n; i++) {
+    if (!vis[i]) {
+        cnt++;
+        for (int j = i; (long long)j * i < n; j++)
+            vis[j * i] = 1;
+    }
+}
+\end{CodeBlock}
+
+\topic{欧拉筛}
+
+\begin{CodeBlock}
+for (int i = 2; i < n; i++) {
+    if (vis[i] == 0)
+        prime[++cnt] = i;
+    for (int j = 1; j <= cnt; j++) {
+        if (i * prime[j] > n)
+            break;
+        vis[i * prime[j]] = 1;
+        if (i % prime[j] == 0)
+            break;
+    }
+}
+\end{CodeBlock}
+
+\subsection{快速幂}
+
+\topic{快速幂模板}
+
+\begin{CodeBlock}
+int ksm(int y, int x) {
+    if (x == 0)
+        return 1;
+    if (y == 0)
+        return 0;
+    int sum = 1;
+    while (x) {
+        if (x & 1)
+            sum = sum * y % modd;
+        y = y * y % modd;
+        x >>= 1;
+    }
+    return sum % modd;
+}
+\end{CodeBlock}
+
+\subsection{矩阵快速幂}
+
+\topic{矩阵乘法模板}
+
+ans存储快速幂结果,a在自增
+
+\begin{CodeBlock}
+void ksm() {
+    for (int i = 1; i <= n; i++)
+        ans[i][i] = 1ll;
+    while (k) {
+        if (k & 1)
+            multi1();
+        multi2();
+        k >>= 1;
+    }
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+void multi1() {
+    int a1[105][105] = {0};
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= n; j++)
+            for (int c = 1; c <= n; c++) {
+                a1[i][j] += ans[i][c] * a[c][j] % modd;
+                a1[i][j] %= modd;
+            }
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= n; j++)
+            ans[i][j] = a1[i][j];
+}
+void multi2() {
+    int a1[105][105] = {0};
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= n; j++)
+            for (int c = 1; c <= n; c++) {
+                a1[i][j] += a[i][c] * a[c][j] % modd;
+                a1[i][j] %= modd;
+            }
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= n; j++)
+            a[i][j] = a1[i][j];
+}
+\end{CodeBlock}
+
+快速幂/矩阵快速幂应用
+
+\topic{递推式加速}
+
+快速幂、矩阵快速幂可以用来解决一维多阶的递推表达式快速求解,如:
+
+一维一阶 $a_n = a_{n-1} * 5$,$a_1 = 1$
+
+可以推出 $a_n = 1 * pow(5,n-1)$,$pow$ 可以用快速幂求解
+
+一维二阶 斐波纳契数列f(n) = 1*f(n-1) + 1*f(n-2)
+
+\begin{CodeBlock}
+可以推出 $\{f(n+1),f(n)\} = \{f(1),f(0)\} \cdot ksm(\{(1,1),(1,0)\},n)$
+\end{CodeBlock}
+
+变换矩阵第一列为对应系数,后面通过代入得到
+
+多维一阶 同一维一阶,但是an为一个一维向量,an只依赖于an-1,可以分析得出一个矩阵使得an-1变成an
+
+\subsection{逆元}
+
+\topic{除法取模}
+
+\begin{quote}
+当模数为质数且 $b$ 与 $MOD$ 互质时, 可以先求 $b$ 的逆元, 再把除法转化为乘法。\par
+$b$ 的逆元可以用 $b^{MOD-2} \bmod MOD$ 求出。\par
+因此 $(a / b) \bmod MOD = (a \bmod MOD) \cdot inv(b) \bmod MOD$。\par
+\end{quote}
+
+\topic{连续逆元}
+
+\begin{CodeBlock}
+// 连续数字逆元
+// inv[i] 表示 i 在 mod p 意义下的逆元
+inv[1] = 1;
+inv[i] = (int)(p - 1LL * inv[p % i] * (p / i) % p);
+
+// 连续阶乘逆元
+// inv[i] 表示 i! 在 mod modd 意义下的逆元
+inv[n] = ksm(fac[n], modd - 2);
+inv[i] = 1LL * inv[i + 1] * (i + 1) % modd;
+\end{CodeBlock}
+
+\begin{CodeBlock}
+fac[1] = 1;
+for (int i = 2; i <= 5005; i++)
+    fac[i] = 1ll * fac[i - 1] * i % modd;
+ifac[5000] = ksm(fac[5000], modd - 2) % modd;
+for (int i = 4999; i >= 1; i--)
+    ifac[i] = 1ll * ifac[i + 1] * (i + 1) % modd;
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int C(int n, int m) {
+    int res = 1ll * fac[n] * ifac[m] % modd * ifac[n - m] % modd;
+    return res;
+}
+\end{CodeBlock}
+
+\subsection{裴蜀定理}
+
+\topic{裴蜀定理}
+
+\begin{quote}
+裴蜀定理\par
+如果 $a$ 和 $b$ 是不全为 0 的整数, 则一定存在整数 $x,y$, 使得 $ax + by = gcd(a,b)$。\par
+证明过程与扩展欧几里得算法的推导紧密相关，理解这一结论有助于把握后续算法为何正确。\par
+\smallskip
+需要重点把握的理解是：\par
+$a$ 和 $b$ 的最大公约数, 是所有形如 $ax + by$ 的整数中最小的正数。\par
+\smallskip
+常见推论包括：\par
+1，如果 $a,b$ 互质，当且仅当存在整数 $x,y$ 使得 $ax+by=1$；\par
+2，如果方程 $ax+by=c$ 有整数解，那么 $c$ 一定是 $\gcd(a,b)$ 的倍数；\par
+3，二元情形可以进一步推广到多元线性组合；\par
+4，一旦 $ax+by=c$ 存在一组整数解，就一定存在无穷多组整数解。\par
+\end{quote}
+
+\subsection{扩展欧几里得}
+
+\begin{quote}
+扩展欧几里得算法\par
+对于方程 $ax+by=gcd(a,b)$, 当 $a$ 和 $b$ 确定以后, $gcd(a,b)$ 也唯一确定, 通常要求入参 $a,b$ 非负。\par
+扩展欧几里得算法可以同时求出 $a,b$ 的最大公约数 $d$，以及方程 $ax+by=d$ 的一组特解 $x,y$。\par
+从递归推导角度看，它正是对裴蜀定理构造过程的算法化实现。\par
+\smallskip
+时间复杂度\par
+扩展欧几里得算法理论时间复杂度为 $O(\log \min\{a,b\})$。\par
+在竞赛与算法题中通常可以直接作为标准模板使用。\par
+\end{quote}
+
+\begin{CodeBlock}
+void exgcd(int a, int b) {
+    if (b == 0) {
+        gcd = a;
+        x = 1;
+        y = 0;
+    } else {
+        exgcd(b, a % b);
+        int px = x;
+        int py = y;
+        x = py;
+        y = px - (a / b) * py;
+    }
+}
+\end{CodeBlock}
+
+扩展欧几里得的通解形式:
+
+$x = x_0 * (c / d) + (b / d) * n$
+
+$y = y_0 * (c / d) - (a / d) * n$
+
+n $\in$ Z
+
+求最小非负特解:用龟速乘实现 $x_0 * (c / d) \% (b / d)$
+
+扩展欧几里得求逆元:要求num和modd互质
+
+\begin{CodeBlock}
+exgcd(num,modd);
+x = (x % modd + modd) % modd;
+\end{CodeBlock}
+
+\topic{格点与鞋带公式}
+
+对于平面上两个整数坐标点 $(x_1,y_1)$、$(x_2,y_2)$,两点之间的整数点(包括自己)的个数为 $\gcd(|x_1-x_2|,|y_1-y_2|)+1$
+
+求多边形面积的鞋带公式
+
+$n$ 个点 $(x_i,y_i)$ 按照顺时针/逆时针排列
+
+\subsection{pick定理}
+
+\topic{Pick 定理}
+
+多边形面积=内格点数+边格点数/2-1
+
+其中，面积可以由鞋带公式计算，边界上的格点数可以由前述 $\gcd$ 结论计算；这里统计边界点时不再额外加 $1$。
+
+\section{线性基}
+
+\subsection{异或线性基}
+
+\begin{quote}
+线性基原理\par
+线性基常指的是异或空间线性基，向量空间线性基是下期的内容\par
+一堆数字能得到的非0异或和的结果，能被元素个数尽量少的集合，不多不少的全部得到\par
+那么就说，这个元素个数尽量少的集合，是这一堆数字的异或空间线性基\par
+这里关注的是“去重后的非零异或和能否全部表示出来”，而不是每一种异或和出现了多少次\par
+如下几个结论是构建异或空间线性基的基础，需要重点理解\par
+1，一堆数字中，任意的a和b，用a\textasciicircum{}b的结果替代a、b中的一个数字，不会影响非0异或和的组成\par
+3，一堆数字能否异或出0，在求出异或空间线性基之后，需要被单独标记\par
+\end{quote}
+
+普通消元求解线性基
+
+\topic{普通消元}
+
+zero表示原数据能否异或构造出0这个数据
+
+bas表示线性基
+
+\begin{CodeBlock}
+bool insert(int num) {
+    for (int i = 63; i >= 0; i--) {
+        if ((num >> i) & 1) {
+            if (bas[i] == 0) {
+                bas[i] = num;
+                return true;
+            }
+            num ^= bas[i];
+        }
+    }
+    return false;
+}
+void work() {
+    zero = false;
+    for (int i = 1; i <= n; i++) {
+        if (!insert(a[i]))
+            zero = true;
+    }
+}
+\end{CodeBlock}
+
+依据这一组基可以得出:
+
+基的数量t:遍历一遍bas数组,统计不为0的数据
+
+可以构造出的数据的数量:2的t次方-1
+
+最大异或和:从bas[63]到bas[0]依次异或当前最大值(初始为0),如果异或后的最大值更大,那就更新,否则保留
+
+高斯消元求解线性基
+
+\topic{高斯消元}
+
+\begin{quote}
+一堆数字的异或空间线性基，可能不只一组，求解方式为普通消元或者高斯消元\par
+普通消元：得到某一组线性基，进而知道：线性基大小、异或和个数、异或和是否有0、最大异或和等信息\par
+普通消元得到的是任意一组合法线性基，适合处理大多数基础问题\par
+高斯消元：得到标准形式的异或空间线性基，既能知道普通消元得到的信息，还能知道第k小的异或和\par
+高斯消元得到的是标准形线性基，便于进一步做顺序统计和结构分析\par
+一般题目只需要普通消元得到的一组线性基，足够解题，除非需要知道第k小的异或和，才会用到高斯消元\par
+两种方法的时间复杂度都为 $O(nm)$，其中 $n$ 是数字个数，$m$ 是最大数字的位数\par
+异或空间线性基的规模为 $O(m)$，其中 $m$ 是最大数字的位数\par
+\end{quote}
+
+\begin{CodeBlock}
+void gauss() {
+    len = 1;
+    for (int i = 62; i >= 0; i--) {
+        for (int j = len; j <= n; j++) {
+            if (bas[j] & (1ll << i)) {
+                swap(bas[j], bas[len]);
+                break;
+            }
+        }
+        if (bas[len] & (1ll << i)) {
+            for (int j = 1; j <= n; j++) {
+                if (j != len && (bas[j] & (1ll << i)))
+                    bas[j] ^= bas[len];
+            }
+            len++;
+        }
+    }
+    len--;
+    zero = (len == n ? 0 : 1);
+}
+\end{CodeBlock}
+
+\topic{第 k 小异或和}
+
+将所有的基从小到大排列,最小的编号为0
+
+将k写成最低位编号为0的二进制形式,第几位上有1则答案异或上编号为几的基
+
+\subsection{向量线性基}
+
+\topic{普通消元}
+
+操作和普通消元求解异或线性基基本一致。求解得到的线性基不一定是标准型,但每个基之间线性无关,也就是说每个基都不能被另外的基自由组合表示。
+
+如果需要得到标准型、判断秩、处理自由元或进一步求解线性方程组,再使用高斯消元。
+
+\subsection{CRT}
+
+\begin{quote}
+中国剩余定理（CRT）\par
+给出 $n$ 个同余方程：$x \equiv r_i \pmod{m_i}$，其中所有 $m_i$ 两两互质，求最小非负解 $x$。\par
+\smallskip
+求解思路：\par
+1. 令 $lcm = m_1 * m_2 * \cdots * m_n$。\par
+2. 对每个方程，令 $a_i = lcm / m_i$。\par
+3. 求 $a_i$ 在模 $m_i$ 意义下的逆元 $inv_i$。\par
+4. 每一项贡献为 $c_i = r_i * a_i * inv_i$。\par
+5. 最终答案为 $ans = (c_1 + c_2 + \cdots + c_n) \bmod lcm$。\par
+\end{quote}
+
+\begin{CodeBlock}
+// c_i = r_i * (lcm / m_i) * inv(lcm / m_i) mod lcm
+// 注意中间结果可能溢出,必要时使用龟速乘 multi。
+for (int i = 1; i <= n; i++) {
+    a[i] = lcm / m[i];
+    exgcd(a[i], m[i]);
+    inv[i] = (x % m[i] + m[i]) % m[i];
+    c[i] = multi(multi(r[i], a[i], lcm), inv[i], lcm);
+    ans = (ans + c[i]) % lcm;
+}
+\end{CodeBlock}
+
+这种方法要求模数 $m_1,m_2,m_3$ 两两互质
+
+\subsection{EXCRT}
+
+\begin{quote}
+扩展中国剩余定理\par
+给出 $n$ 个同余方程，求满足同余方程的最小正数解 $x$，所有 $M_i$ 之间可能并不互质\par
+\smallskip
+求解过程的关键在于把多个同余方程逐步合并成一个新的同余方程\par
+1. 补充初始模数 $m_0 = 1$，$lcm = 1$，$tail = 0$，那么，$ans = lcm * x + tail$，这必然成立\par
+2. 当前来到模数 $m_i$，余数 $r_i$，新的方程 $ans = m_i * y + r_i$，两个方程相减得到新表达式\par
+3. $lcm * x + m_i * y = r_i - tail$，记为 $ax + by = c$，扩展欧几里得算法求解\par
+4. 如果不存在解，过程结束，说明不存在这样的 $ans$。如果存在解，得到最小非负特解 $x_0$\par
+5. 通解 $x = x_0 + (b/d) * n$，带入 $ans = lcm * x + tail$\par
+6. 得到 $ans = lcm * (b/d) * n + (lcm * x_0 + tail)$\par
+7. 令 $lcm * (b/d)$ 记为 $lcm'$，令 $(lcm * x_0 + tail) \% lcm'$ 记为 $tail'$\par
+8. 表达式又是 $ans = lcm' * x + tail'$，去往下一组方程，继续迭代 $ans$\par
+9. 直到所有方程计算完毕，最终返回 tail 就是答案\par
+\end{quote}
+
+\begin{CodeBlock}
+int excrt() {
+    int tail = 0, lcm = 1;
+    // 初始 ans = lcm * x + tail
+    for (int i = 1; i <= n; i++) {
+        int a = lcm;
+        int b = m[i];
+        int c = r[i] - tail;
+        c = (c % b + b) % b;
+        exgcd(a, b);
+        if (c % gcd != 0)
+            return -1; // 无解
+        int x0 = multi(x, c / gcd, b / gcd);
+        int tmp = lcm * (b / gcd);
+        tail = (multi(x0, lcm, tmp) + tail) % tmp;
+        lcm = tmp;
+    }
+    return tail;
+}
+\end{CodeBlock}
+
+\begin{CodeBlock}
+int multi(int a, int b, int modd) {
+    a = (a % modd + modd) % modd;
+    b = (b % modd + modd) % modd;
+    int ans = 0;
+    while (b != 0) {
+        if ((b & 1) != 0)
+            ans = (ans + a) % modd;
+        a = (a + a) % modd;
+        b >>= 1;
+    }
+    return ans;
+}
+\end{CodeBlock}
+
+\section{高斯消元}
+
+\subsection{加法方程组}
+
+本节实现中矩阵元素通常使用 `double` 存储，因此判断某个值是否为 $0$ 时，不能直接写成相等判断，而应比较 `fabs(x) < eps`，常用取值如 `eps = 1e-6`。
+
+\begin{quote}
+高斯消元解决加法方程组\par
+高斯消元流程通常以加法方程组为例说明，但处理其他线性方程组时思路类似\par
+如果题目要求严格区分矛盾、多解、唯一解，就需要额外关注主元与自由元的判定\par
+理解高斯消元的关键，在于把“矩阵变形”和“解空间结构”联系起来\par
+1，先把问题整理成标准方程组；若变量数与方程数不一致，需要补齐矩阵的维度信息\par
+2，执行消元时要能够正确区分矛盾、唯一解和多解三种情况\par
+3，理解矩阵形态与解之间的对应关系，特别是主元与自由元的含义\par
+4，矩阵最终形态所表达的含义要读清：主元变量可能依赖若干自由元，而自由元之间彼此独立\par
+高斯消元的过程时间复杂度为 $O(n^3)$，其中 $n$ 为扩充后的方程个数\par
+\end{quote}
+
+流程如下：
+
+1. 对第 $i$ 列处理时，从尚未确定主元的行中选出 $|a[j][i]|$ 最大的一行，与第 $i$ 行交换；
+
+2. 如果换行后该列主元仍视为 $0$，说明这一列无法确定主元，直接跳过；
+
+3. 对当前行做归一化处理，使主元 $a[i][i]$ 变成 $1$；
+
+4. 用当前主元行消去其他各行在第 $i$ 列上的系数；
+
+5. 理想情况下，最终会得到接近行最简形的矩阵结构。
+
+当方程组数量不足时，可以理解为补充全 $0$ 行：$0x_1+0x_2+\cdots+0x_n = 0$
+
+当表达式中缺少某些变量时，则应在对应位置补 $0$ 系数，例如：$ax_1+bx_2+0x_3+0x_4$
+
+\begin{CodeBlock}
+void work_swap(int x, int y) {
+    for (int j = 1; j <= n + 1; j++)
+        swap(a[x][j], a[y][j]);
+}
+void gauss() {
+    for (int i = 1; i <= n; i++) {
+        int maxi = i;
+        for (int j = 1; j <= n; j++) {
+            if (j < i && fabs(a[j][j]) >= eps)
+                continue;
+            if (fabs(a[j][i]) > fabs(a[maxi][i]))
+                maxi = j;
+        }
+        work_swap(maxi, i);
+        if (fabs(a[i][i]) < eps)
+            continue;
+        double tmp = a[i][i];
+        for (int j = 1; j <= n + 1; j++)
+            a[i][j] /= tmp;
+        for (int j = 1; j <= n; j++) {
+            if (i == j)
+                continue;
+            double rat = a[j][i] / a[i][i];
+            for (int k = 1; k <= n + 1; k++)
+                a[j][k] -= rat * a[i][k];
+        }
+    }
+}
+\end{CodeBlock}
+
+\topic{解的判定}
+
+方程组与未知数个数相同的情形：
+
+如果系数矩阵中出现全零行，就需要检查对应常数项是否为零；若存在非零常数项则方程组矛盾、无解，否则说明存在自由元，因而是多解。
+
+方程数多于未知数时：
+若有效行的主元齐全且全零行不冲突，则为唯一解；若存在冲突，则无解；若主元不齐全但无冲突，则为多解。
+
+方程数少于未知数时：
+
+此时不可能出现唯一解；无冲突则为多解，有冲突则为无解。
+
+\subsection{异或方程组}
+
+最后一层循环需要写成 `k <= n + 1`，否则会漏掉增广列。
+
+\begin{CodeBlock}
+void gauss() {
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (j < i && a[j][j] == 1)
+                continue;
+            if (a[j][i] == 1) {
+                work_swap(i, j);
+                break;
+            }
+        }
+        if (a[i][i] == 1) {
+            for (int j = 1; j <= n; j++) {
+                if (i != j && a[j][i] == 1) {
+                    for (int k = 1; k <= n + 1; k++)
+                        a[j][k] ^= a[i][k];
+                }
+            }
+        }
+    }
+}
+\end{CodeBlock}
+
+\section{一些小定理}
+
+\topic{序与图论结论}
+
+狄尔沃斯定理:最长链长度等于反链个数的最小值
+
+求个数时可以用贪心+二分的思路
+
+对一个数组拆分成两半整体交换位置,相当于循环左移/右移
+
+最大生成树上两点路径之间的最小边权,是原图中的最大瓶颈路径的瓶颈值;树上的两点路径一定是原图中的最大瓶颈路径中的一条
+
+做同余减法的时候需要先加modd,不然可能会变成负数
+
+\topic{基础模板}
+
+\begin{CodeBlock}
+int gcd(int x, int y) {
+    if (y == 0)
+        return x;
+    return gcd(y, x % y);
+}
+\end{CodeBlock}
+
+\topic{最短路模板}
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+#include <queue>
+#include <vector>
+#define int long long
+using namespace std;
+struct edge {
+    int v, w;
+};
+struct node {
+    int u, dis;
+    friend bool operator<(const node &x, const node &y) {
+        return x.dis > y.dis;
+    }
+};
+int n, m, S;
+int dis[100005];
+bool vis[100005];
+vector<edge> a[100005];
+priority_queue<node> q;
+\end{CodeBlock}
+
+\begin{CodeBlock}
+for (int i = 1; i <= m; i++) {
+    int x, y, z;
+    cin >> x >> y >> z;
+    a[x].push_back({y, z});
+}
+dis[S] = 0;
+q.push({S, 0});
+while (!q.empty()) {
+    node now = q.top();
+    q.pop();
+    int u = now.u;
+    if (vis[u])
+        continue;
+    vis[u] = 1;
+    for (int i = 0; i < a[u].size(); i++) {
+        int v = a[u][i].v;
+        int w = a[u][i].w;
+        if (dis[v] > dis[u] + w) {
+            dis[v] = dis[u] + w;
+            q.push({v, dis[v]});
+        }
+    }
+}
+\end{CodeBlock}
+
+$x_1+x_2+\cdots+x_m = t$ 的非负整数解个数:$C(m+t-1,m-1)$
+
+二维vector动态初始化
+
+\begin{CodeBlock}
+vector<vector<int>> a;
+int main() {
+    int n;
+    cin >> n;
+    a.assign(n, vector<int>());
+}
+\end{CodeBlock}
+
+位运算,包括异或等运算,优先级非常低,一定要加括号
+
+\topic{位运算与枚举}
+
+前缀异或有规律性:$q_i = a_1 \oplus a_2 \oplus \cdots \oplus a_i$
+
+$i \bmod 4 == 1$,$q_i = 1$
+
+$i \bmod 4 == 2$,$q_i = i + 1$
+
+$i \bmod 4 == 3$,$q_i = 0$
+
+$i \bmod 4 == 0$,$q_i = i$
+
+状压dp中枚举子集:
+
+\begin{quote}
+$j$ 会按从大到小的顺序枚举出 $status$ 的所有非空子集，常用写法如下：\par
+for (int j = status; j > 0; j = (j - 1) \& status) \{\par
+    // 使用子集 j\par
+\}\par
+\end{quote}
+
+\topic{位运算判定}
+
+\begin{CodeBlock}
+public static boolean is2(int num) {
+    return (num & (num - 1)) == 0;
+}
+\end{CodeBlock}
+
+\section{快读}
+
+\subsection{整数快读}
+
+\begin{CodeBlock}
+inline int read() {
+    int x = 0, f = 1;
+    char ch = getchar();
+    while (ch < '0' || ch > '9') {
+        if (ch == '-')
+            f = -1;
+        ch = getchar();
+    }
+    while (ch >= '0' && ch <= '9') {
+        x = x * 10 + ch - '0';
+        ch = getchar();
+    }
+    return x * f;
+}
+\end{CodeBlock}
+
+\subsection{防溢出乘法}
+
+针对取模乘法的防溢出乘法:龟速乘
+
+\begin{CodeBlock}
+int add(int a, int b) {
+    int ans = a;
+    while (b != 0) {
+        ans = a ^ b;
+        b = (a & b) << 1;
+        a = ans;
+    }
+    return ans % modd;
+}
+int multi(int a, int b) {
+    int ans = 0;
+    while (b != 0) {
+        if ((b & 1) != 0)
+            ans = add(ans, a);
+        a = add(a, a);
+        a %= modd;
+        b >>= 1;
+    }
+    return ans % modd;
+}
+\end{CodeBlock}
+
+\topic{负数取模处理}
+
+也可以写成能够处理负数的形式:
+
+\begin{CodeBlock}
+int multi(int a, int b, int modd) {
+    a = (a % modd + modd) % modd;
+    b = (b % modd + modd) % modd;
+    int ans = 0;
+    while (b != 0) {
+        if ((b & 1) != 0)
+            ans = (ans + a) % modd;
+        a = (a + a) % modd;
+        b >>= 1;
+    }
+    return ans;
+}
+\end{CodeBlock}
+
+\end{document}
