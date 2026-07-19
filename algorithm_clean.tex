@@ -1034,6 +1034,340 @@ public static long query(int jobl, int jobr, long addHistory, int l, int r, int 
 }
 \end{CodeBlock}
 
+\section{有序表}
+
+\subsection{平衡树}
+
+\topic{模板题: 洛谷 P3369 普通平衡树}
+
+题目要求动态维护一个可重集合 $M$,并支持以下操作:
+
+1. 向 $M$ 中插入一个数 $x$;
+
+2. 从 $M$ 中删除一个数 $x$,若有多个相同的数,只删除一个;
+
+3. 查询 $M$ 中严格小于 $x$ 的数有多少个,并将答案加一;
+
+4. 将 $M$ 从小到大排列后,查询排名为 $x$ 的数;
+
+5. 查询 $M$ 中小于 $x$ 且最大的数,即 $x$ 的前驱;
+
+6. 查询 $M$ 中大于 $x$ 且最小的数,即 $x$ 的后继。
+
+对于操作 3、5、6,不保证当前集合中存在数 $x$; 对于操作 4、5、6,保证答案一定存在。
+
+测试链接: \url{https://www.luogu.com.cn/problem/P3369}
+
+\topic{AVL 树的核心思想}
+
+AVL 树是一棵满足以下条件的二叉搜索树:
+
+1. 对任意节点,左子树中的所有键值小于节点键值,右子树中的所有键值大于节点键值;
+
+2. 对任意节点,左右子树高度之差不超过 $1$;
+
+3. 相同键值不重复建立节点,而是在节点中维护出现次数 `cont`。
+
+二叉搜索树负责保证有序性,AVL 的旋转操作负责把树高维持在 $O(\log n)$。因此插入、删除、排名、第 $k$ 小、前驱和后继都可以在 $O(\log n)$ 时间内完成。
+
+\topic{静态数组存储}
+
+模板使用数组模拟节点,适合竞赛中提前确定节点上限的场景。编号为 $0$ 的节点作为空节点,全局数组默认初始化为零,因此 `siz[0]` 和 `hi[0]` 都可以直接参与维护。
+
+\begin{CodeBlock}
+key[i]: 节点 i 保存的键值
+cont[i]: 键值 key[i] 在节点 i 中出现的次数
+siz[i]: 以 i 为根的子树中元素总数,包含重复元素
+hi[i]: 以 i 为根的子树高度
+ls[i], rs[i]: 左、右孩子编号
+head: 当前整棵 AVL 树的根节点编号
+cnt: 已经分配的最大节点编号
+\end{CodeBlock}
+
+`siz` 统计的是元素数量而不是节点数量,这是处理重复值、排名和第 $k$ 小查询的关键。
+
+\topic{高度维护与旋转}
+
+每次修改一个子树后,都要先重新计算当前节点的信息,再检查平衡性:
+
+\begin{CodeBlock}
+siz[i] = siz[ls[i]] + siz[rs[i]] + cont[i]
+hi[i] = max(hi[ls[i]], hi[rs[i]]) + 1
+\end{CodeBlock}
+
+失衡只可能出现在四种形态中:
+
+1. LL 型: 左孩子的左子树过高,对当前节点右旋;
+
+2. RR 型: 右孩子的右子树过高,对当前节点左旋;
+
+3. LR 型: 左孩子的右子树过高,先对左孩子左旋,再对当前节点右旋;
+
+4. RL 型: 右孩子的左子树过高,先对右孩子右旋,再对当前节点左旋。
+
+插入节点后,从插入位置向上回溯并维护; 删除节点后,也要从受影响的位置向上逐层检查。删除时可能同时出现 LL 与 LR,或者 RR 与 RL,因此代码中按子树高度关系选择调整方式即可。
+
+\topic{插入与删除}
+
+插入时按照二叉搜索树的比较规则递归向下。遇到相同键值只增加 `cont`,不新建节点; 回溯时依次执行 `up` 和 `maintain`。
+
+删除时分为三种情况:
+
+1. 当前节点出现次数大于一,只减少 `cont`;
+
+2. 当前节点至多只有一个孩子,直接用非空孩子替换当前节点;
+
+3. 当前节点有两个孩子,用右子树中的最小节点,即后继节点,替换当前节点,再从右子树中删除这个后继节点。
+
+模板中的 `removemostleft` 负责从一棵子树中摘除最左节点,并在回溯过程中维护 AVL 平衡。替换节点时,必须同时接管原节点的左右子树,否则会丢失原有子树。
+
+\topic{排名、第 k 小、前驱与后继}
+
+排名查询只统计严格小于 `num` 的元素数量,最后加一即可。第 $k$ 小查询根据左子树大小和当前节点的 `cont` 决定向左、在当前节点返回,还是向右递归。
+
+前驱和后继不要求 $x$ 一定存在:
+
+1. 若当前键值大于等于 $x$,前驱只能在左子树中寻找;
+
+2. 若当前键值小于 $x$,当前键值是一个候选答案,继续在右子树中寻找更大的合法值;
+
+3. 后继的判断方向完全相反。
+
+\topic{P3369 AVL 模板代码}
+
+下面的代码使用静态数组维护一棵带重复值计数的 AVL 树,支持 P3369 的六种操作。所有递归函数返回调整后的子树根编号,这是旋转能够改变子树根的关键。
+
+\begin{CodeBlock}
+#include <algorithm>
+#include <iostream>
+#include <cstdio>
+
+using namespace std;
+
+const int MAXN = 100005;
+
+int cnt = 0, head = 0;
+int key[MAXN], hi[MAXN], ls[MAXN], rs[MAXN];
+int cont[MAXN], siz[MAXN];
+
+// 重新计算节点 i 的子树大小和高度。
+void up(int i) {
+    siz[i] = siz[ls[i]] + siz[rs[i]] + cont[i];
+    hi[i] = max(hi[ls[i]], hi[rs[i]]) + 1;
+}
+
+// 左旋: 当前节点 i 的右孩子 r 上升, i 成为 r 的左孩子。
+int leftrotate(int i) {
+    int r = rs[i];
+    rs[i] = ls[r];
+    ls[r] = i;
+    up(i);
+    up(r);
+    return r;
+}
+
+// 右旋: 当前节点 i 的左孩子 l 上升, i 成为 l 的右孩子。
+int rightrotate(int i) {
+    int l = ls[i];
+    ls[i] = rs[l];
+    rs[l] = i;
+    up(i);
+    up(l);
+    return l;
+}
+
+// 检查节点 i 是否失衡,并返回调整后的子树根。
+int maintain(int i) {
+    int lh = hi[ls[i]];
+    int rh = hi[rs[i]];
+
+    // 左子树过高: LL 直接右旋, LR 先左旋左孩子再右旋。
+    if (lh - rh > 1) {
+        if (hi[ls[ls[i]]] >= hi[rs[ls[i]]])
+            i = rightrotate(i);
+        else {
+            ls[i] = leftrotate(ls[i]);
+            i = rightrotate(i);
+        }
+    }
+    // 右子树过高: RR 直接左旋, RL 先右旋右孩子再左旋。
+    else if (rh - lh > 1) {
+        if (hi[rs[rs[i]]] >= hi[ls[rs[i]]])
+            i = leftrotate(i);
+        else {
+            rs[i] = rightrotate(rs[i]);
+            i = leftrotate(i);
+        }
+    }
+    return i;
+}
+
+// 返回严格小于 num 的元素数量。
+int getrank(int i, int num) {
+    if (i == 0)
+        return 0;
+    if (key[i] >= num)
+        return getrank(ls[i], num);
+    return siz[ls[i]] + cont[i] + getrank(rs[i], num);
+}
+
+// 题目中的排名从 1 开始,因此在“小于 num 的数量”基础上加一。
+int getrank(int num) {
+    return getrank(head, num) + 1;
+}
+
+// 删除以 i 为根的子树中的最左节点 mostleft,并维护回溯路径。
+int removemostleft(int i, int mostleft) {
+    if (i == mostleft)
+        return rs[i];
+
+    ls[i] = removemostleft(ls[i], mostleft);
+    up(i);
+    return maintain(i);
+}
+
+// 向以 i 为根的 AVL 子树中插入 num,返回调整后的根。
+int add(int i, int num) {
+    if (i == 0) {
+        key[++cnt] = num;
+        cont[cnt] = 1;
+        siz[cnt] = 1;
+        hi[cnt] = 1;
+        return cnt;
+    }
+
+    if (key[i] == num)
+        cont[i]++;
+    else if (key[i] > num)
+        ls[i] = add(ls[i], num);
+    else
+        rs[i] = add(rs[i], num);
+
+    up(i);
+    return maintain(i);
+}
+
+// 从以 i 为根的 AVL 子树中删除一个 num,返回调整后的根。
+int remove(int i, int num) {
+    if (key[i] < num) {
+        rs[i] = remove(rs[i], num);
+    } else if (key[i] > num) {
+        ls[i] = remove(ls[i], num);
+    } else if (cont[i] > 1) {
+        // 有重复值时只删除一个,节点本身仍然保留。
+        cont[i]--;
+    } else {
+        if (ls[i] == 0 && rs[i] == 0)
+            return 0;
+        if (ls[i] != 0 && rs[i] == 0)
+            i = ls[i];
+        else if (ls[i] == 0 && rs[i] != 0)
+            i = rs[i];
+        else {
+            // 两个孩子都存在时,用右子树最小节点作为后继。
+            int mostleft = rs[i];
+            while (ls[mostleft] != 0)
+                mostleft = ls[mostleft];
+
+            rs[i] = removemostleft(rs[i], mostleft);
+            ls[mostleft] = ls[i];
+            rs[mostleft] = rs[i];
+            i = mostleft;
+        }
+    }
+
+    up(i);
+    return maintain(i);
+}
+
+// 查询以 i 为根的子树中的第 x 小元素。
+int index(int i, int x) {
+    if (siz[ls[i]] >= x)
+        return index(ls[i], x);
+    if (siz[ls[i]] + cont[i] < x)
+        return index(rs[i], x - siz[ls[i]] - cont[i]);
+    return key[i];
+}
+
+// 查询严格小于 num 的最大键值。
+int pre(int i, int num) {
+    if (i == 0)
+        return -999999999;
+    if (key[i] >= num)
+        return pre(ls[i], num);
+    return max(key[i], pre(rs[i], num));
+}
+
+// 查询严格大于 num 的最小键值。
+int post(int i, int num) {
+    if (i == 0)
+        return 999999999;
+    if (key[i] <= num)
+        return post(rs[i], num);
+    return min(key[i], post(ls[i], num));
+}
+
+void add(int num) {
+    head = add(head, num);
+}
+
+void remove(int num) {
+    // getrank(num) != getrank(num + 1) 等价于 num 至少出现一次。
+    if (getrank(num) != getrank(num + 1))
+        head = remove(head, num);
+}
+
+int index(int x) {
+    return index(head, x);
+}
+
+int pre(int num) {
+    return pre(head, num);
+}
+
+int post(int num) {
+    return post(head, num);
+}
+
+int main() {
+    int t;
+    cin >> t;
+    while (t--) {
+        int op, x;
+        cin >> op >> x;
+        if (op == 1)
+            add(x);
+        else if (op == 2)
+            remove(x);
+        else if (op == 3)
+            cout << getrank(x) << '\n';
+        else if (op == 4)
+            cout << index(x) << '\n';
+        else if (op == 5)
+            cout << pre(x) << '\n';
+        else
+            cout << post(x) << '\n';
+    }
+    return 0;
+}
+\end{CodeBlock}
+
+\topic{复杂度与使用注意}
+
+设当前集合中共有 $n$ 个元素,AVL 树的高度为 $O(\log n)$。插入、删除、排名、第 $k$ 小、前驱和后继的时间复杂度均为 $O(\log n)$,空间复杂度为 $O(n)$。
+
+1. 数组大小要覆盖所有实际插入过的不同键值节点;删除节点后模板不会回收编号;
+
+2. `siz` 必须统计重复元素,不能误写成节点数量;
+
+3. 每次旋转后要先更新下降的旧根,再更新上升的新根;
+
+4. 插入、删除递归返回值都可能是新的子树根,父节点必须接收返回值;
+
+5. 前驱和后继的哨兵值应根据题目值域调整,不要让哨兵值与合法答案冲突;
+
+6. 若键值可能接近 `int` 上界,删除检查中的 `num + 1` 需要改用更安全的存在性判断,避免整数溢出。
+
 \section{倍增与ST表}
 
 \topic{核心思想与适用范围}
