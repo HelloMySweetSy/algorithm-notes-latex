@@ -1352,6 +1352,7 @@ int main() {
 }
 \end{CodeBlock}
 
+\clearpage
 \topic{复杂度与使用注意}
 
 设当前集合中共有 $n$ 个元素,AVL 树的高度为 $O(\log n)$。插入、删除、排名、第 $k$ 小、前驱和后继的时间复杂度均为 $O(\log n)$,空间复杂度为 $O(n)$。
@@ -1368,7 +1369,6 @@ int main() {
 
 6. 若键值可能接近 `int` 上界,删除检查中的 `num + 1` 需要改用更安全的存在性判断,避免整数溢出。
 
-\clearpage
 \section{负环与差分约束}
 
 \subsection{SPFA 求最短路}
