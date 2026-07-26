@@ -2788,7 +2788,17 @@ x = (x % modd + modd) % modd;
 
 求多边形面积的鞋带公式
 
-$n$ 个点 $(x_i,y_i)$ 按照顺时针/逆时针排列
+$n$ 个点 $(x_i,y_i)$ 按照顺时针/逆时针排列,且相邻点连线构成简单多边形。记
+
+\[
+(x_{n+1},y_{n+1})=(x_1,y_1),
+\]
+
+则多边形面积为
+
+\[
+S=\frac{1}{2}\left|\sum_{i=1}^{n}(x_i y_{i+1}-x_{i+1}y_i)\right|.
+\]
 
 \subsection{pick定理}
 
@@ -2899,9 +2909,51 @@ void gauss() {
 
 \topic{普通消元}
 
-操作和普通消元求解异或线性基基本一致。求解得到的线性基不一定是标准型,但每个基之间线性无关,也就是说每个基都不能被另外的基自由组合表示。
+向量空间线性基由一组线性无关向量组成。依次将每个向量在已有主元下消元;若消元后仍有绝对值大于 $\varepsilon$ 的分量,则将其加入线性基,否则它与已有向量线性相关。下面的模板求出向量组的秩。
 
-如果需要得到标准型、判断秩、处理自由元或进一步求解线性方程组,再使用高斯消元。
+\begin{CodeBlock}
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+const int MAXN = 505;
+const double eps = 1e-5;
+int n, m, rank_;
+double a[MAXN][MAXN];
+int bas[MAXN];
+
+bool insert(int i) {
+    for (int col = 1; col <= m; col++) {
+        if (fabs(a[i][col]) <= eps)
+            continue;
+        if (bas[col] == 0) {
+            bas[col] = i;
+            return true;
+        }
+        double rate = a[i][col] / a[bas[col]][col];
+        for (int k = col; k <= m; k++)
+            a[i][k] -= rate * a[bas[col]][k];
+    }
+    return false;
+}
+
+int main() {
+    cin >> n >> m;
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            cin >> a[i][j];
+
+    for (int i = 1; i <= n; i++) {
+        if (insert(i))
+            rank_++;
+    }
+    cout << rank_ << endl;
+    return 0;
+}
+\end{CodeBlock}
+
+其中 $rank\_$ 就是向量组的秩。模板使用普通加减乘除,适用于实数向量;浮点数比较时应根据题目数据范围调整 $\varepsilon$。
 
 \subsection{CRT}
 
@@ -3182,7 +3234,11 @@ int main() {
 
 \topic{位运算与枚举}
 
-前缀异或有规律性:$q_i = a_1 \oplus a_2 \oplus \cdots \oplus a_i$
+一般情况下,前缀异或为 $q_i = a_1 \oplus a_2 \oplus \cdots \oplus a_i$。当 $a_i=i$ 时,
+
+$q_i = 1 \oplus 2 \oplus 3 \oplus \cdots \oplus i$
+
+有如下规律:
 
 $i \bmod 4 == 1$,$q_i = 1$
 
@@ -3209,6 +3265,255 @@ public static boolean is2(int num) {
 }
 \end{CodeBlock}
 
+\section{同余最短路}
+
+\topic{基本思想}
+
+同余最短路把“能否拼出某个数”转化为“到达某个余数的最小代价”。选一个正整数 $x$ 作为基准数，只保留余数 $0,1,\ldots,x-1$ 这 $x$ 个状态。若当前余数为 $i$，使用一个数 $y$ 后会转移到
+
+\[
+(i+y)\bmod x,
+\]
+
+边权为 $y$。如果到达余数 $i$ 的最小数为 $dis[i]$，那么同一余数还可以通过反复加上基准数 $x$ 得到
+
+\[
+dis[i],\ dis[i]+x,\ dis[i]+2x,\ldots
+\]
+
+因此，只需要求出每个余数对应的最小值，就能统计一定范围内可以到达的数。
+
+\topic{题目一：跳楼机}
+
+有一栋 $h$ 层的楼，从第一层出发，可以向上移动 $x$ 层、$y$ 层或 $z$ 层，也可以回到第一层。求使用跳楼机可以到达多少层。
+
+把第一层看作高度 $0$，需要统计区间 $[0,h-1]$ 中可以到达的高度。以 $x$ 为模数建立 $x$ 个节点，节点 $i$ 表示当前高度模 $x$ 的余数，加入两类边：
+
+\begin{quote}
+$i\to(i+y)\bmod x$，边权为 $y$；\par
+$i\to(i+z)\bmod x$，边权为 $z$。
+\end{quote}
+
+加 $x$ 层不会改变余数，因此不必单独建边。求出从余数 $0$ 到各个余数的最短距离后，若 $dis[i]\le h-1$，该余数能贡献
+
+\[
+\left\lfloor\frac{h-1-dis[i]}{x}\right\rfloor+1
+\]
+
+层。所有边权非负，可以使用 Dijkstra，时间复杂度为 $O(x\log x)$，空间复杂度为 $O(x)$。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+#define int long long
+
+struct node {
+    int v, w;
+};
+
+struct node1 {
+    int u, dis;
+    friend bool operator < (const node1 &x, const node1 &y) {
+        return x.dis > y.dis;
+    }
+};
+
+int h;
+int x, y, z;
+vector<node> a[100005];
+priority_queue<node1> q;
+int dis[100005], vis[100005];
+
+void dij() {
+    dis[0] = 0;
+    q.push({0, 0});
+
+    while (!q.empty()) {
+        node1 now = q.top();
+        q.pop();
+        int u = now.u;
+        if (vis[u])
+            continue;
+        vis[u] = 1;
+
+        for (int i = 0; i < a[u].size(); i++) {
+            int v = a[u][i].v;
+            int w = a[u][i].w;
+            if (dis[v] > dis[u] + w) {
+                dis[v] = dis[u] + w;
+                q.push({v, dis[v]});
+            }
+        }
+    }
+}
+
+signed main() {
+    cin >> h >> x >> y >> z;
+
+    for (int i = 0; i < x; i++) {
+        int t1 = (i + y) % x;
+        int t2 = (i + z) % x;
+        a[i].push_back({t1, y});
+        a[i].push_back({t2, z});
+        dis[i] = 1LL << 62;
+    }
+
+    dij();
+
+    int ans = 0;
+    for (int i = 0; i < x; i++) {
+        if (dis[i] <= h - 1)
+            ans += (h - 1 - dis[i]) / x + 1;
+    }
+    cout << ans << endl;
+    return 0;
+}
+\end{CodeBlock}
+
+\topic{题目二：墨墨的等式}
+
+墨墨突然对等式很感兴趣，他正在研究
+\[
+\sum_{i=1}^{n}a_ix_i=b
+\]
+存在非负整数解的条件。他要你编写一个程序，给定 $n,a_1,\ldots,a_n,l,r$，求出多少个 $b\in[l,r]$ 可以使等式存在非负整数解。
+
+\topic{输入格式}
+
+第一行三个整数 $n,l,r$。
+
+第二行 $n$ 个整数 $a_1,\ldots,a_n$。
+
+\topic{输出格式}
+
+一行一个整数，表示有多少个 $b\in[l,r]$ 可以使等式存在非负整数解。
+
+\topic{输入输出样例}
+
+\begin{CodeBlock}
+输入：
+2 5 10
+3 5
+
+输出：
+5
+\end{CodeBlock}
+
+\topic{说明/提示}
+
+对于 $20\%$ 的数据，$n\le5,r\le10$。
+
+对于 $40\%$ 的数据，$n\le10,r\le10^6$。
+
+对于 $100\%$ 的数据，$n\le12,0\le a_i\le5\times10^5,1\le l\le r\le10^{12}$。
+
+\topic{两次转圈法}
+
+排序并去掉 $0$ 后，令最小的正数 $a_1$ 为基准数 $x$。状态 $i$ 表示当前数模 $x$ 的余数，\texttt{dis[i]} 表示得到余数 $i$ 的最小数。初始时只有 $\texttt{dis[0]}=0$，其余为无穷大。
+
+处理数 $a_i$ 时，余数转移为
+
+\[
+cur\to(cur+a_i)\bmod x
+\]
+
+这个转移会形成 $d=\gcd(a_i,x)$ 个环，分别从 $j=0,1,\ldots,d-1$ 开始遍历。每个环上的节点都会被访问两圈：第一圈让已有的最短距离向前传播，第二圈让第一圈后面产生的更新绕回起点并继续传播。两圈后，本轮使用 $a_i$ 任意次得到的最小值就都已经更新到 \texttt{dis} 中。
+
+处理完所有数后，若余数 $i$ 的最小值为 $\texttt{dis[i]}$，那么同一余数的其他可表示数为
+
+\[
+\texttt{dis[i]},\ \texttt{dis[i]}+x,\ \texttt{dis[i]}+2x,\ldots
+\]
+
+因此对于一个上界 $t$，余数 $i$ 的贡献为
+
+\[
+\max\left(0,\left\lfloor\frac{t-\texttt{dis[i]}}{x}\right\rfloor+1\right)
+\]
+
+答案就是上界为 $r$ 的总数减去上界为 $l-1$ 的总数。排序和去掉零值的时间复杂度为 $O(n\log n+nx)$，空间复杂度为 $O(x)$。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+#define int long long
+#define endl '\n'
+
+int n, l, r;
+int a[500005];
+int dis[500005];
+
+int gcd(int x, int y) {
+    if (y == 0)
+        return x;
+    return gcd(y, x % y);
+}
+
+signed main() {
+    cin >> n >> l >> r;
+    l--;
+
+    for (int i = 1; i <= n; i++)
+        cin >> a[i];
+
+    sort(a + 1, a + n + 1);
+    int cnt = 0;
+    for (int i = 1; i <= n; i++) {
+        if (a[i] != 0)
+            a[++cnt] = a[i];
+    }
+
+    if (cnt == 0) {
+        cout << 0 << endl;
+        return 0;
+    }
+
+    dis[0] = 0;
+    int x = a[1];
+    for (int i = 1; i < x; i++)
+        dis[i] = 9999999999999;
+
+    for (int i = 2; i <= cnt; i++) {
+        int d = gcd(a[i], x);
+        for (int j = 0; j < d; j++) {
+            for (int cur = j, circle = 0;
+                 circle < 2;
+                 circle += cur == j ? 1 : 0) {
+                int nxt = (cur + a[i]) % x;
+                if (dis[cur] != 9999999999999)
+                    dis[nxt] = min(dis[nxt], dis[cur] + a[i]);
+                cur = nxt;
+            }
+        }
+    }
+
+    int ans = 0;
+    for (int i = 0; i < x; i++) {
+        if (r >= dis[i])
+            ans += (r - dis[i]) / x + 1;
+        if (l >= dis[i])
+            ans -= (l - dis[i]) / x + 1;
+    }
+    cout << ans << endl;
+    return 0;
+}
+\end{CodeBlock}
+
+\topic{两种方法的区别}
+
+Dijkstra 方法直接把余数建成图，思路清晰，适合状态数 $x$ 不太大的情况；两次转圈法不使用堆，利用加法取模后的环结构进行转移，适合题目允许 $O(nx)$ 的情况。两种方法的共同基础都是：先求每个余数能达到的最小数，再通过不断加上基准数统计答案。
+
+\clearpage
 \section{快读}
 
 \subsection{整数快读}
