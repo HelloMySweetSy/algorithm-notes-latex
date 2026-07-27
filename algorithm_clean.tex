@@ -3156,6 +3156,16 @@ void gauss() {
 
 做同余减法的时候需要先加modd,不然可能会变成负数
 
+\topic{错排问题}
+
+将 $n$ 个元素放入 $n$ 个位置，要求每个元素都不在原来的位置，这样的排列称为错排，错排的方案数记为 $f(n)$。
+
+初值为 $f(0)=1,f(1)=0$，递推式为
+
+\[
+f(n)=(n-1)\bigl(f(n-1)+f(n-2)\bigr)
+\]
+
 \topic{基础模板}
 
 \begin{CodeBlock}
@@ -3578,6 +3588,246 @@ int multi(int a, int b, int modd) {
         b >>= 1;
     }
     return ans;
+}
+\end{CodeBlock}
+
+\clearpage
+\section{康托展开、约瑟夫环、完美洗牌}
+
+\subsection{康托展开}
+
+\topic{题目}
+
+给定一个由 $1,2,\ldots,n$ 组成的排列，求它在所有排列按字典序排列后的排名，答案对 $998244353$ 取模。
+
+测试题目：\href{https://www.luogu.com.cn/problem/P5367}{洛谷 P5367 康托展开}。
+
+\topic{排名公式}
+
+对于排列 $S$ 的第 $i$ 个位置，记
+
+\[
+c_i=\left|\left\{j\mid i<j\le n,\ S_j<S_i\right\}\right|,
+\]
+
+即 $S_i$ 右侧比它小的数的个数。排列的排名从 $0$ 开始时，康托展开为
+
+\[
+\mathrm{rank}_0(S)=\sum_{i=1}^{n}c_i(n-i)!
+\]
+
+题目通常要求从 $1$ 开始的排名，因此最终答案为 $\mathrm{rank}_0(S)+1$。
+
+\topic{树状数组求解}
+
+从左到右扫描排列，用树状数组维护还没有被使用的数字。开始时 $1,2,\ldots,n$ 都未使用；处理 $S_i$ 时，\texttt{sum(S[i]-1)} 就是当前的 $c_i$，再将 $S_i$ 从树状数组中删除。
+
+预处理阶乘 $fac[k]=k!\bmod 998244353$，每一位的贡献为 $c_i\times fac[n-i]$。时间复杂度为 $O(n\log n)$，空间复杂度为 $O(n)$。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+
+using namespace std;
+
+#define int long long
+#define endl '\n'
+
+const int modd = 998244353;
+
+int n;
+int a[1000006];
+int fac[1000006];
+int tree[1000006];
+
+int lowbit(int x) {
+    return x & (-x);
+}
+
+void add(int x, int y) {
+    for (int i = x; i <= n; i += lowbit(i))
+        tree[i] += y;
+}
+
+int sum(int x) {
+    int ans = 0;
+    for (int i = x; i >= 1; i -= lowbit(i))
+        ans += tree[i];
+    return ans;
+}
+
+signed main() {
+    cin >> n;
+    for (int i = 1; i <= n; i++)
+        cin >> a[i];
+
+    fac[0] = 1;
+    for (int i = 1; i <= n; i++)
+        fac[i] = fac[i - 1] * i % modd;
+
+    // 初始时 1..n 都还没有被使用。
+    for (int i = 1; i <= n; i++)
+        add(i, 1);
+
+    int ans = 0;
+    for (int i = 1; i <= n; i++) {
+        // 统计当前仍未使用且小于 a[i] 的数。
+        ans += sum(a[i] - 1) * fac[n - i] % modd;
+        ans %= modd;
+        // 当前元素已经处理，后续不再参与统计。
+        add(a[i], -1);
+    }
+
+    cout << (ans + 1) % modd << endl;
+    return 0;
+}
+\end{CodeBlock}
+
+\subsection{逆康托展开}
+
+\topic{题目}
+
+给定一个由 $1,2,\ldots,n$ 组成的排列，设它当前的排名为 $x$，求排名为 $x+m$ 的排列。题目保证 $x+m$ 不超过所有排列的总数。
+
+数据范围：$1\le n\le10^5$，$1\le m\le10^{15}$。
+
+测试题目：\href{https://www.luogu.com.cn/problem/U72177}{洛谷 U72177 逆康托展开}。
+
+\topic{阶乘进制转换}
+
+康托展开得到的排名可以写成
+
+下面采用从 $0$ 开始的排名表示；若题目中的排名从 $1$ 开始，应先减 $1$。
+
+\[
+x=c_1(n-1)!+c_2(n-2)!+\cdots+c_{n-1}1!+c_n0!,
+\]
+
+其中第 $i$ 位 $c_i$ 的取值范围是 $0\le c_i\le n-i$。因此它不是普通的十进制，而是阶乘进制：从左到右各位的基数依次为 $n,n-1,\ldots,2,1$。
+
+为了求出排名增加 $m$ 后的各位数字，先把 $m$ 加到最低位，再从后往前进位。第 $i$ 位的基数为
+
+\[
+base_i=n-i+1,
+\]
+
+所以进位过程为
+
+\[
+a[i-1]\mathrel{+}=\left\lfloor\frac{a[i]}{base_i}\right\rfloor,\qquad
+a[i]\gets a[i]\bmod base_i
+\]
+
+代码中的
+
+\begin{CodeBlock}
+a[i - 1] += a[i] / (n - i + 1);
+a[i] %= n - i + 1;
+\end{CodeBlock}
+
+就是这个阶乘进制转换。特别地，最后一位的基数是 $1$，所以它不能保留数值，所有增加的量都会向前进位。例如 $n=4$ 时，四位的基数依次为 $4,3,2,1$。
+
+\topic{线段树解码}
+
+先从左到右扫描原排列，用线段树维护还没有使用的数字。对于当前数字 $a_i$，线段树查询区间 $[1,a_i-1]$ 的和，就得到它对应的康托展开位；然后删除 $a_i$。
+
+完成阶乘进制加法后，重新建立一棵线段树。此时 $a_i$ 表示当前应该选择剩余数字中第 $a_i+1$ 小的数，使用线段树查询第 $k$ 个仍未使用的数字并删除它，即可还原目标排列。时间复杂度为 $O(n\log n)$，空间复杂度为 $O(n)$。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+
+using namespace std;
+
+#define int long long
+#define endl '\n'
+
+int n, m;
+int a[100005];
+int tree[400005];
+
+void build(int l, int r, int i) {
+    if (l == r) {
+        tree[i] = 1;
+        return;
+    }
+
+    int mid = l + r >> 1;
+    build(l, mid, i << 1);
+    build(mid + 1, r, i << 1 | 1);
+    tree[i] = tree[i << 1] + tree[i << 1 | 1];
+}
+
+void add(int jobi, int jobv, int l, int r, int i) {
+    if (l == r) {
+        tree[i] += jobv;
+        return;
+    }
+    int mid = l + r >> 1;
+    if (mid >= jobi)
+        add(jobi, jobv, l, mid, i << 1);
+    else
+        add(jobi, jobv, mid + 1, r, i << 1 | 1);
+    tree[i] = tree[i << 1] + tree[i << 1 | 1];
+}
+
+int getans(int k, int l, int r, int i) {
+    if (l == r) {
+        tree[i]--;
+        return l;
+    }
+    int mid = l + r >> 1;
+    int ans;
+    if (tree[i << 1] >= k)
+        ans = getans(k, l, mid, i << 1);
+    else
+        ans = getans(k - tree[i << 1], mid + 1, r, i << 1 | 1);
+    tree[i] = tree[i << 1] + tree[i << 1 | 1];
+    return ans;
+}
+
+int sum(int jobl, int jobr, int l, int r, int i) {
+    if (jobl <= l && jobr >= r)
+        return tree[i];
+    int mid = l + r >> 1;
+    int ans = 0;
+    if (jobl <= mid)
+        ans += sum(jobl, jobr, l, mid, i << 1);
+    if (jobr >= mid + 1)
+        ans += sum(jobl, jobr, mid + 1, r, i << 1 | 1);
+    return ans;
+}
+
+signed main() {
+    cin >> n >> m;
+    for (int i = 1; i <= n; i++)
+        cin >> a[i];
+
+    build(1, n, 1);
+    for (int i = 1; i <= n; i++) {
+        int x = a[i];
+        // 统计当前仍未使用且小于 x 的数字，得到阶乘进制的一位。
+        if (x == 1)
+            a[i] = 0;
+        else
+            a[i] = sum(1, x - 1, 1, n, 1);
+        add(x, -1, 1, n, 1);
+    }
+
+    // a[i] 是阶乘进制的第 i 位；先把 m 加到最低位。
+    a[n] += m;
+    for (int i = n; i >= 1; i--) {
+        int base = n - i + 1;
+        // 当前位只保留 [0, base - 1]，多出的部分进到前一位。
+        a[i - 1] += a[i] / base;
+        a[i] %= base;
+    }
+
+    build(1, n, 1);
+    for (int i = 1; i <= n; i++)
+        // a[i] 从 0 开始，因此要取剩余数字中的第 a[i] + 1 小。
+        cout << getans(a[i] + 1, 1, n, 1) << " ";
+    return 0;
 }
 \end{CodeBlock}
 
