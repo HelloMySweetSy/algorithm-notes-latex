@@ -3592,7 +3592,7 @@ int multi(int a, int b, int modd) {
 \end{CodeBlock}
 
 \clearpage
-\section{康托展开、约瑟夫环、完美洗牌}
+\section{康托展开、约瑟夫环}
 
 \subsection{康托展开}
 
@@ -3827,6 +3827,59 @@ signed main() {
     for (int i = 1; i <= n; i++)
         // a[i] 从 0 开始，因此要取剩余数字中的第 a[i] + 1 小。
         cout << getans(a[i] + 1, 1, n, 1) << " ";
+    return 0;
+}
+\end{CodeBlock}
+
+\subsection{约瑟夫环问题}
+
+\topic{题目}
+
+有 $n$ 个首尾相接的节点，编号为 $1,2,\ldots,n$。从 $1$ 号节点开始报数，报到 $k$ 的节点被删除，之后从下一个节点重新从 $1$ 开始报数，直到环上只剩一个节点，求该节点的原始编号。
+
+数据范围：$1\le n,k\le10^6$。
+
+测试题目：\href{https://www.luogu.com.cn/problem/P8671}{洛谷 P8671 约瑟夫环问题}。
+
+\topic{递推推导}
+
+每一轮游戏开始时，都把当前开始位置重新命名为 $1$。设上一轮序列长度为 $n$，本轮序列长度为 $n-1$，上一轮被杀节点在上一轮序列中的编号为 $p$。若本轮序列中的节点编号为 $\mathrm{new}$，则它在上一轮序列中的原始编号为
+
+\[
+\mathrm{old}=(\mathrm{new}+p-1)\bmod n+1.
+\]
+
+这里公式中的 $n$ 指上一轮序列的长度。被杀节点的编号与 $k$ 的关系为
+
+\[
+p=(k-1)\bmod n+1.
+\]
+
+从最后一轮开始反推：最后只剩一个节点，重新编号后它必为 $1$。设待恢复的上一轮序列长度为 $c$，把本轮得到的答案代入上式，得到
+
+\[
+\mathrm{ans}=(\mathrm{ans}+k-1)\bmod c+1.
+\]
+
+令 $c$ 从 $2$ 递增到 $n$，最终的 \texttt{ans} 就是原序列中的答案。时间复杂度为 $O(n)$，空间复杂度为 $O(1)$。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+
+using namespace std;
+
+int main() {
+    int n, k;
+    cin >> n >> k;
+
+    int ans = 1; // 只有一个节点时，答案为 1。
+    for (int c = 2; c <= n; c++) {
+        // c 是当前待恢复的上一轮序列长度。
+        ans = (ans + k - 1) % c + 1;
+    }
+
+    cout << ans << endl;
     return 0;
 }
 \end{CodeBlock}
