@@ -2591,6 +2591,50 @@ for (int i = 2; i < n; i++) {
 }
 \end{CodeBlock}
 
+\topic{记录最小质因数与两种质因数个数}
+
+如果需要记录每个数的最小质因数，或者统计每个数的质因子个数，就不能再把 \texttt{vis} 只当作布尔标记。质数令 \texttt{vis[i]=i}，合数令 \texttt{vis[i]} 保存其最小质因数。设 $p=\texttt{vis[i]}$，$\texttt{rest=i/p}$，则
+
+\[
+\texttt{num[i]=num[rest]+1}
+\]
+
+统计可重复的质因数个数。若 $\texttt{rest}$ 中已经含有质因数 $p$，即 \texttt{rest \% p == 0}，则 $p$ 不再为新的质因数；否则将不重复质因数个数加 $1$。
+
+\begin{CodeBlock}
+int num[10000007];      // 可重复质因数个数
+int kind[10000007];     // 不可重复质因数个数
+
+for (int i = 2;i <= n;i++) {
+    if (vis[i] == 0) {
+        prime[++cnt] = i;
+        vis[i] = i;
+    }
+
+    int p = vis[i];
+    int rest = i / p;
+
+    // 可重复计算
+    num[i] = num[rest] + 1;
+
+    // 不重复计算
+    if (rest % p == 0)
+        kind[i] = kind[rest];
+    else
+        kind[i] = kind[rest] + 1;
+
+    for (int j = 1; j <= cnt; j++) {
+        if (1LL * i * prime[j] > n)
+            break;
+
+        vis[i * prime[j]] = prime[j];
+
+        if (i % prime[j] == 0)
+            break;
+    }
+}
+\end{CodeBlock}
+
 \subsection{快速幂}
 
 \topic{快速幂模板}
@@ -3922,6 +3966,95 @@ f(n)=\sum_{i=0}^{n-1}f(i)\cdot f(n-1-i).
 
 按照 PPT 中的处理，公式 1、2、3 的时间复杂度为 $O(n)$，公式 4 的时间复杂度为 $O(n^2)$。实际解题时，通常根据数据范围和取模要求选择合适的公式。
 
+\subsection{因子记数法求卡特兰数}
+
+当模数为合数时，分母不一定与模数互质，不能直接使用模逆元。此时可以将卡特兰数的公式改写为
+
+\[
+f(n)=\frac{1}{n+1}C_{2n}^{n}
+    =\frac{(2n)!}{(n+1)!n!}
+    =\frac{(n+2)(n+3)\cdots(2n)}{n!}.
+\]
+
+令数组 \texttt{cont} 记录每个整数因子的次数：分母 $n!$ 中的因子次数记为 $-1$，分子 $(n+2)(n+3)\cdots(2n)$ 中的因子次数记为 $1$。然后将这些整数因子继续分解为质因子。分解完成后，\texttt{cont[p]} 就表示质数 $p$ 在最终结果中的指数。设 $\mathcal{P}$ 为所有质数的集合，则最后计算
+
+\[
+f(n)=\prod_{p\in\mathcal{P}}p^{\texttt{cont[p]}}\pmod{modd}.
+\]
+
+代码使用线性筛记录合数的最小质因子，再从大到小拆分合数，保证拆出的更小因子还会继续被处理。因此整个过程不需要计算除法或模逆元，适用于模数为合数的情况。下面代码中的数组范围要求 $2n\le 2000000$。
+
+\begin{CodeBlock}
+#include <iostream>
+#include <cstdio>
+
+using namespace std;
+
+#define int long long
+#define endl '\n'
+
+int n,modd;
+int vis[2000006],prime[2000006];
+int cont[2000006];
+int cnt = 0;
+
+int ksm(int y,int x) {
+    if (x == 0)
+        return 1;
+    if (y == 0)
+        return 0;
+    int sum = 1;
+    while (x) {
+        if (x & 1)
+            sum = sum * y % modd;
+        y = y * y % modd;
+        x >>= 1;
+    }
+    return sum % modd;
+}
+
+signed main() {
+    cin >> n >> modd;
+
+    // 线性筛，vis[i]记录合数i的最小质因子
+    for (int i = 2;i <= 2 * n;i++) {
+        if (vis[i] == 0)
+            prime[++cnt] = i;
+        for (int j = 1;j <= cnt;j++) {
+            if (i * prime[j] > 2 * n)
+                break;
+            vis[i * prime[j]] = prime[j];
+            if (i % prime[j] == 0)
+                break;
+        }
+    }
+
+    // 先记录(n+2)(n+3)...(2n) / n!中的整数因子次数
+    for (int i = 2;i <= n;i++)
+        cont[i] = -1;
+    for (int i = n + 2;i <= 2 * n;i++)
+        cont[i] = 1;
+
+    // 将整数因子逐步拆成质因子
+    for (int i = 2 * n;i >= 2;i--) {
+        if (vis[i]) {
+            cont[vis[i]] += cont[i];
+            cont[i / vis[i]] += cont[i];
+            cont[i] = 0;
+        }
+    }
+
+    // 根据每个质因子的最终指数计算答案
+    int ans = 1ll;
+    for (int i = 2;i <= 2 * n;i++) {
+        if (cont[i])
+            ans = ans * ksm(i,cont[i]) % modd;
+    }
+    cout << ans << endl;
+    return 0;
+}
+\end{CodeBlock}
+
 \subsection{类型一：进出栈模型}
 
 进栈顺序固定为 $1,2,3,\ldots,n$，求所有可能的出栈顺序，方案数为卡特兰数。很多题目都可以转化为这个模型，例如：
@@ -3935,6 +4068,22 @@ f(n)=\sum_{i=0}^{n-1}f(i)\cdot f(n-1-i).
 第三个例子可以转化为进出栈模型。对于一个合法的连接方案，奇数点不能和奇数点相连，偶数点也不能和偶数点相连；否则一条线段两侧会有奇数个点，无法在不相交的条件下全部两两配对。因此每条线段都连接一个奇数点和一个偶数点。
 
 将奇数点 $1,3,5,\ldots,2n-1$ 看作按照固定顺序进栈的元素，将偶数点 $2,4,6,\ldots,2n$ 看作按照顺序出现的出栈位置。每出现一个偶数点，就让一个奇数点出栈，并将这两个点连接。栈的后进先出性质保证了连接的线段不会相交；反过来，每一种合法的连接方案也都对应唯一的出栈顺序。因此，这个问题的方案数就是卡特兰数。
+
+\topic{题目四：有趣的数列}
+
+称一个长度为 $2n$ 的数列 $\{a_i\}_{i=1}^{2n}$ 为有趣的，当且仅当它满足以下三个条件：
+
+\begin{enumerate}
+    \item 它是 $1,2,\ldots,2n$ 这 $2n$ 个整数的一个排列；
+    \item 所有奇数项递增，即 $a_1<a_3<\cdots<a_{2n-1}$，所有偶数项递增，即 $a_2<a_4<\cdots<a_{2n}$；
+    \item 对任意 $1\le i\le n$，相邻两项满足 $a_{2i-1}<a_{2i}$。
+\end{enumerate}
+
+求有趣数列的个数。
+
+将 $1,2,\ldots,2n$ 按从小到大的顺序依次读入。如果当前数字出现在奇数项中，就看作一次进栈；如果出现在偶数项中，就看作一次出栈。由于所有奇数项递增，进栈顺序是固定的；由于所有偶数项递增，出栈顺序也是固定的。条件 $a_{2i-1}<a_{2i}$ 表示第 $i$ 次进栈发生在第 $i$ 次出栈之前，因此任意前缀中进栈次数都不少于出栈次数，得到一个合法的进出栈序列。
+
+反过来，每个合法的进出栈序列都能唯一还原出一个满足上述条件的有趣数列。因此，有趣数列的个数就是卡特兰数 $f(n)$。
 
 \subsection{类型二：路径计数模型}
 
